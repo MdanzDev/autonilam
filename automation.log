@@ -1,0 +1,924 @@
+[2026-07-03T11:18:17.347Z] ========================================
+[2026-07-03T11:18:17.349Z]   AINS NILAM Automation Bot
+[2026-07-03T11:18:17.349Z]   (Using Existing Chrome)
+[2026-07-03T11:18:17.350Z] ========================================
+[2026-07-03T11:18:17.350Z] Connecting to Chrome...
+[2026-07-03T11:18:17.760Z] Connected!
+[2026-07-03T11:18:17.761Z] Checking login status...
+[2026-07-03T11:18:19.128Z] Already logged in!
+[2026-07-03T11:18:19.129Z] Waiting for dashboard...
+[2026-07-03T11:18:19.255Z] Dashboard confirmed.
+[2026-07-03T11:18:19.501Z] 
+Total: 167 | Processed: 0 | Pending: 167
+[2026-07-03T11:18:19.502Z] 
+==================================================
+[2026-07-03T11:18:19.502Z] Book 1/167: "Atomic Habits"
+[2026-07-03T11:18:19.502Z] ==================================================
+[2026-07-03T11:18:19.503Z] Starting new record entry...
+[2026-07-03T11:18:19.503Z] Waiting for dashboard...
+[2026-07-03T11:18:19.510Z] Dashboard confirmed.
+[2026-07-03T11:18:20.080Z] [DEBUG] Found "Mula masukkan sekarang" via link
+[2026-07-03T11:18:20.093Z] [DEBUG] Found "Mula masukkan sekarang" via link
+[2026-07-03T11:18:21.080Z] Selecting Buku/E-Buku...
+[2026-07-03T11:18:21.089Z] [DEBUG] Found "Buku/E-Buku" via button
+[2026-07-03T11:18:22.383Z] Clicking Seterusnya...
+[2026-07-03T11:18:22.399Z] [DEBUG] Found "Seterusnya" via button
+[2026-07-03T11:18:23.323Z] On book information page.
+[2026-07-03T11:18:23.324Z] Filling book information...
+[2026-07-03T11:18:23.327Z] Title: Atomic Habits
+[2026-07-03T11:18:24.723Z] Book type: Fizikal
+[2026-07-03T11:18:24.740Z] [DEBUG] Found "Fizikal" via radio
+[2026-07-03T11:18:55.479Z] Category: Bukan Fiksyen
+[2026-07-03T11:18:55.481Z] [DEBUG] Selecting "Bukan Fiksyen" for "Kategori"
+[2026-07-03T11:18:55.528Z] [DEBUG] Found select with "Kategori" in parent
+[2026-07-03T11:18:55.773Z] Pages: 320
+[2026-07-03T11:18:56.950Z] ISBN: 9780735211292
+[2026-07-03T11:18:57.988Z] Author: James Clear
+[2026-07-03T11:18:59.338Z] Publisher: Avery
+[2026-07-03T11:19:00.536Z] Year: 2018
+[2026-07-03T11:19:01.704Z] Language: English
+[2026-07-03T11:19:01.708Z] [DEBUG] Selecting "English" for "Bahasa"
+[2026-07-03T11:19:01.763Z] [DEBUG] Found select with "Bahasa" in parent
+[2026-07-03T11:19:02.014Z] Book information complete.
+[2026-07-03T11:19:02.025Z] [DEBUG] Found "Seterusnya" via button
+[2026-07-03T11:19:02.599Z] Filling enrichment...
+[2026-07-03T11:19:02.600Z] Summary: 17/10 words
+[2026-07-03T11:19:03.662Z] Lesson: 10/5 words
+[2026-07-03T11:19:04.764Z] Rating: 5 stars
+[2026-07-03T11:19:05.787Z] Enrichment complete.
+[2026-07-03T11:19:05.809Z] [DEBUG] Found "Seterusnya" via button
+[2026-07-03T11:19:06.606Z] Skipping book cover...
+[2026-07-03T11:19:06.625Z] [DEBUG] Found "Seterusnya" via button
+[2026-07-03T11:19:07.844Z] Reviewing submission...
+[2026-07-03T11:19:07.848Z] Title verified.
+[2026-07-03T11:19:07.848Z] Clicking Hantar...
+[2026-07-03T11:19:07.855Z] [DEBUG] Found "Hantar" via button
+[2026-07-03T11:19:09.458Z] Looking for confirmation dialog...
+[2026-07-03T11:19:09.465Z] [DEBUG] after_hantar - Page text: Buku | Tambah Buku | Rumusan | Sila semak & pastikan data adalah tepat dan sahih sebelum membuat hantaran | Gambar Kulit Buku | Tiada gambar | Tarikh | 2026-07-03 | Tajuk | Atomic Habits | Jenis Buku | Fizikal | Kategori | Bukan Fiksyen | Bilangan Mukasurat | 320 | ISBN | 9780735211292 | Penulis | James Clear | Penerbit | Avery | Tahun Terbitan | 2018 | Bahasa | English | Rumusan | Buku ini menerangkan bagaimana perubahan kecil yang dilakukan secara konsisten boleh menghasilkan perubahan besar dalam kehidupan seseorang. | Pengajaran | Kita perlu berdisiplin dan membina tabiat yang baik setiap hari. | Penilaian |  Kembali | Hantar | Hantar data? | Pastikan data anda adalah tepat dan sahih sebelum membuat hantaran | Nota: | Rekod yang anda hantar akan disemak dan disahkan oleh guru/admin. | Sekiranya data didapati tidak sahih, akaun anda boleh dikenakan sekatan secara sementara atau kekal. | Batal | Pasti
+[2026-07-03T11:19:09.484Z] [DEBUG] Found "Pasti" via button
+[2026-07-03T11:19:09.484Z] Confirmation dialog found. Clicking Pasti...
+[2026-07-03T11:19:09.500Z] [DEBUG] Found "Pasti" via button
+[2026-07-03T11:19:12.271Z] Waiting for dashboard...
+[2026-07-03T11:19:18.688Z] Submission confirmed!
+[2026-07-03T11:19:18.689Z] Waiting for dashboard...
+[2026-07-03T11:20:10.758Z] Dashboard UI not explicitly detected but continuing.
+[2026-07-03T11:20:11.349Z] Book 1/167 completed!
+[2026-07-03T11:20:11.353Z] 
+==================================================
+[2026-07-03T11:20:11.353Z] Book 2/167: "Sang Kancil dan Buaya"
+[2026-07-03T11:20:11.354Z] ==================================================
+[2026-07-03T11:20:11.354Z] Starting new record entry...
+[2026-07-03T11:20:11.355Z] Waiting for dashboard...
+[2026-07-03T11:21:03.436Z] Dashboard UI not explicitly detected but continuing.
+[2026-07-03T11:21:03.764Z] [DEBUG] Found "AINS+" via link
+[2026-07-03T11:21:34.778Z] 
+FAILED: Book 2/167 "Sang Kancil dan Buaya"
+[2026-07-03T11:21:34.779Z] Error: page.waitForFunction: Timeout 30000ms exceeded.
+[2026-07-03T11:21:34.888Z] Screenshot: screenshots\error_Sang_Kancil_dan_Buaya_1783077694779.png
+[2026-07-03T11:21:34.888Z] Recovering...
+[2026-07-03T11:21:35.937Z] Waiting for dashboard...
+[2026-07-03T11:21:36.498Z] Dashboard confirmed.
+[2026-07-03T11:21:36.727Z] 
+==================================================
+[2026-07-03T11:21:36.727Z] Book 3/167: "1984"
+[2026-07-03T11:21:36.728Z] ==================================================
+[2026-07-03T11:21:36.728Z] Starting new record entry...
+[2026-07-03T11:21:36.728Z] Waiting for dashboard...
+[2026-07-03T11:21:36.735Z] Dashboard confirmed.
+[2026-07-03T11:21:37.387Z] [DEBUG] Found "AINS+" via link
+[2026-07-03T11:21:38.240Z] Selecting Buku/E-Buku...
+[2026-07-03T11:21:38.247Z] [DEBUG] Found "Buku/E-Buku" via button
+[2026-07-03T11:21:39.677Z] Clicking Seterusnya...
+[2026-07-03T11:21:39.685Z] [DEBUG] Found "Seterusnya" via button
+[2026-07-03T11:21:40.588Z] On book information page.
+[2026-07-03T11:21:40.588Z] Filling book information...
+[2026-07-03T11:21:40.596Z] Title: 1984
+[2026-07-03T11:21:41.400Z] Book type: Fizikal
+[2026-07-03T11:21:41.415Z] [DEBUG] Found "Fizikal" via radio
+[2026-07-03T11:22:12.171Z] Category: Fiksyen
+[2026-07-03T11:22:12.171Z] [DEBUG] Selecting "Fiksyen" for "Kategori"
+[2026-07-03T11:22:12.194Z] [DEBUG] Found select with "Kategori" in parent
+[2026-07-03T11:22:12.729Z] Pages: 328
+[2026-07-03T11:22:13.774Z] ISBN: 9780451524935
+[2026-07-03T11:22:15.264Z] Author: George Orwell
+[2026-07-03T11:22:16.511Z] Publisher: Signet Classic
+[2026-07-03T11:22:17.842Z] Year: 1949
+[2026-07-03T11:22:19.212Z] Language: English
+[2026-07-03T11:22:19.212Z] [DEBUG] Selecting "English" for "Bahasa"
+[2026-07-03T11:22:19.252Z] [DEBUG] Found select with "Bahasa" in parent
+[2026-07-03T11:22:19.634Z] Book information complete.
+[2026-07-03T11:22:19.642Z] [DEBUG] Found "Seterusnya" via button
+[2026-07-03T11:22:20.804Z] Filling enrichment...
+[2026-07-03T11:22:20.804Z] Summary: 10/10 words
+[2026-07-03T11:22:21.996Z] Lesson: 6/5 words
+[2026-07-03T11:22:22.864Z] Rating: 5 stars
+[2026-07-03T11:22:23.594Z] Enrichment complete.
+[2026-07-03T11:22:23.616Z] [DEBUG] Found "Seterusnya" via button
+[2026-07-03T11:22:24.566Z] Skipping book cover...
+[2026-07-03T11:22:24.585Z] [DEBUG] Found "Seterusnya" via button
+[2026-07-03T11:22:25.402Z] Reviewing submission...
+[2026-07-03T11:22:25.412Z] Title verified.
+[2026-07-03T11:22:25.412Z] Clicking Hantar...
+[2026-07-03T11:22:25.424Z] [DEBUG] Found "Hantar" via button
+[2026-07-03T11:22:27.426Z] Looking for confirmation dialog...
+[2026-07-03T11:22:27.433Z] [DEBUG] after_hantar - Page text: Buku | Tambah Buku | Rumusan | Sila semak & pastikan data adalah tepat dan sahih sebelum membuat hantaran | Gambar Kulit Buku | Tiada gambar | Tarikh | 2026-07-03 | Tajuk | 1984 | Jenis Buku | Fizikal | Kategori | Fiksyen | Bilangan Mukasurat | 328 | ISBN | 9780451524935 | Penulis | George Orwell | Penerbit | Signet Classic | Tahun Terbitan | 1949 | Bahasa | English | Rumusan | Kisah masyarakat distopia di bawah pengawasan kerajaan totalitarian yang zalim. | Pengajaran | Kebebasan amat berharga dan perlu dipertahankan. | Penilaian |  Kembali | Hantar | Hantar data? | Pastikan data anda adalah tepat dan sahih sebelum membuat hantaran | Nota: | Rekod yang anda hantar akan disemak dan disahkan oleh guru/admin. | Sekiranya data didapati tidak sahih, akaun anda boleh dikenakan sekatan secara sementara atau kekal. | Batal | Pasti
+[2026-07-03T11:22:27.440Z] [DEBUG] Found "Pasti" via button
+[2026-07-03T11:22:27.441Z] Confirmation dialog found. Clicking Pasti...
+[2026-07-03T11:22:27.447Z] [DEBUG] Found "Pasti" via button
+[2026-07-03T11:22:29.828Z] Waiting for dashboard...
+[2026-07-03T11:22:29.833Z] Submission confirmed!
+[2026-07-03T11:22:29.833Z] Waiting for dashboard...
+[2026-07-03T11:23:21.904Z] Dashboard UI not explicitly detected but continuing.
+[2026-07-03T11:23:22.290Z] Book 3/167 completed!
+[2026-07-03T11:23:22.293Z] 
+==================================================
+[2026-07-03T11:23:22.294Z] Book 4/167: "To Kill a Mockingbird"
+[2026-07-03T11:23:22.294Z] ==================================================
+[2026-07-03T11:23:22.295Z] Starting new record entry...
+[2026-07-03T11:23:22.295Z] Waiting for dashboard...
+[2026-07-03T11:24:14.340Z] Dashboard UI not explicitly detected but continuing.
+[2026-07-03T11:24:14.783Z] [DEBUG] cannot_find_AINS+ - Page text: Buku | Tambah Buku | Rumusan | Sila semak & pastikan data adalah tepat dan sahih sebelum membuat hantaran | Gambar Kulit Buku | Tiada gambar | Tarikh | 2026-07-03 | Tajuk | 1984 | Jenis Buku | Fizikal | Kategori | Fiksyen | Bilangan Mukasurat | 328 | ISBN | 9780451524935 | Penulis | George Orwell | Penerbit | Signet Classic | Tahun Terbitan | 1949 | Bahasa | English | Rumusan | Kisah masyarakat distopia di bawah pengawasan kerajaan totalitarian yang zalim. | Pengajaran | Kebebasan amat berharga dan perlu dipertahankan. | Penilaian |  Kembali | Hantar | × | Tahniah! | Anda berjaya menambah koleksi bahan bacaan dan ilmu baru hari ini. |  10 Mata | Tambah ke senarai kegemaran
+[2026-07-03T11:24:14.927Z] Screenshot: screenshots\cannot_find_AINS__1783077854784.png
+[2026-07-03T11:24:14.927Z] Retry 1/3 for find "AINS+": Element with text "AINS+" not found
+[2026-07-03T11:24:16.975Z] [DEBUG] cannot_find_AINS+ - Page text: Buku | Tambah Buku | Rumusan | Sila semak & pastikan data adalah tepat dan sahih sebelum membuat hantaran | Gambar Kulit Buku | Tiada gambar | Tarikh | 2026-07-03 | Tajuk | 1984 | Jenis Buku | Fizikal | Kategori | Fiksyen | Bilangan Mukasurat | 328 | ISBN | 9780451524935 | Penulis | George Orwell | Penerbit | Signet Classic | Tahun Terbitan | 1949 | Bahasa | English | Rumusan | Kisah masyarakat distopia di bawah pengawasan kerajaan totalitarian yang zalim. | Pengajaran | Kebebasan amat berharga dan perlu dipertahankan. | Penilaian |  Kembali | Hantar | × | Tahniah! | Anda berjaya menambah koleksi bahan bacaan dan ilmu baru hari ini. |  10 Mata | Tambah ke senarai kegemaran
+[2026-07-03T11:24:17.088Z] Screenshot: screenshots\cannot_find_AINS__1783077856975.png
+[2026-07-03T11:24:17.089Z] Retry 2/3 for find "AINS+": Element with text "AINS+" not found
+[2026-07-03T11:24:21.142Z] [DEBUG] cannot_find_AINS+ - Page text: Buku | Tambah Buku | Rumusan | Sila semak & pastikan data adalah tepat dan sahih sebelum membuat hantaran | Gambar Kulit Buku | Tiada gambar | Tarikh | 2026-07-03 | Tajuk | 1984 | Jenis Buku | Fizikal | Kategori | Fiksyen | Bilangan Mukasurat | 328 | ISBN | 9780451524935 | Penulis | George Orwell | Penerbit | Signet Classic | Tahun Terbitan | 1949 | Bahasa | English | Rumusan | Kisah masyarakat distopia di bawah pengawasan kerajaan totalitarian yang zalim. | Pengajaran | Kebebasan amat berharga dan perlu dipertahankan. | Penilaian |  Kembali | Hantar | × | Tahniah! | Anda berjaya menambah koleksi bahan bacaan dan ilmu baru hari ini. |  10 Mata | Tambah ke senarai kegemaran
+[2026-07-03T11:24:21.278Z] Screenshot: screenshots\cannot_find_AINS__1783077861143.png
+[2026-07-03T11:24:21.279Z] 
+FAILED: Book 4/167 "To Kill a Mockingbird"
+[2026-07-03T11:24:21.279Z] Error: Failed find "AINS+" after 3 attempts: Element with text "AINS+" not found
+[2026-07-03T11:24:21.393Z] Screenshot: screenshots\error_To_Kill_a_Mockingbird_1783077861279.png
+[2026-07-03T11:24:21.394Z] Recovering...
+[2026-07-03T11:24:22.459Z] Waiting for dashboard...
+[2026-07-03T11:24:23.182Z] Dashboard confirmed.
+[2026-07-03T11:24:23.436Z] 
+==================================================
+[2026-07-03T11:24:23.437Z] Book 5/167: "Sapiens: A Brief History of Humankind"
+[2026-07-03T11:24:23.437Z] ==================================================
+[2026-07-03T11:24:23.437Z] Starting new record entry...
+[2026-07-03T11:24:23.438Z] Waiting for dashboard...
+[2026-07-03T11:24:23.446Z] Dashboard confirmed.
+[2026-07-03T11:24:23.856Z] [DEBUG] Found "AINS+" via link
+[2026-07-03T11:24:24.874Z] Selecting Buku/E-Buku...
+[2026-07-03T11:24:24.893Z] [DEBUG] Found "Buku/E-Buku" via button
+[2026-07-03T11:24:26.069Z] Clicking Seterusnya...
+[2026-07-03T11:24:26.079Z] [DEBUG] Found "Seterusnya" via button
+[2026-07-03T11:24:26.832Z] On book information page.
+[2026-07-03T11:24:26.832Z] Filling book information...
+[2026-07-03T11:24:26.836Z] Title: Sapiens: A Brief History of Humankind
+[2026-07-03T11:24:28.061Z] Book type: E-Buku
+[2026-07-03T11:24:28.098Z] [DEBUG] Found "E-Buku" via radio
+[2026-07-03T11:24:59.136Z] Category: Bukan Fiksyen
+[2026-07-03T11:24:59.137Z] [DEBUG] Selecting "Bukan Fiksyen" for "Kategori"
+[2026-07-03T11:24:59.164Z] [DEBUG] Found select with "Kategori" in parent
+[2026-07-03T11:24:59.445Z] Pages: 443
+[2026-07-03T11:25:00.803Z] ISBN: 9780062316097
+[2026-07-03T11:25:02.051Z] Author: Yuval Noah Harari
+[2026-07-03T11:25:03.342Z] Publisher: Harper
+[2026-07-03T11:25:04.694Z] Year: 2015
+[2026-07-03T11:25:05.620Z] Language: English
+[2026-07-03T11:25:05.620Z] [DEBUG] Selecting "English" for "Bahasa"
+[2026-07-03T11:25:05.673Z] [DEBUG] Found select with "Bahasa" in parent
+[2026-07-03T11:25:06.099Z] Book information complete.
+[2026-07-03T11:25:06.112Z] [DEBUG] Found "Seterusnya" via button
+[2026-07-03T11:25:07.019Z] Filling enrichment...
+[2026-07-03T11:25:07.020Z] Summary: 9/10 words
+[2026-07-03T11:25:07.021Z] Summary expanded to 29 words.
+[2026-07-03T11:25:07.874Z] Lesson: 7/5 words
+[2026-07-03T11:25:08.917Z] Rating: 5 stars
+[2026-07-03T11:25:09.634Z] Enrichment complete.
+[2026-07-03T11:25:09.656Z] [DEBUG] Found "Seterusnya" via button
+[2026-07-03T11:25:10.676Z] Skipping book cover...
+[2026-07-03T11:25:10.684Z] [DEBUG] Found "Seterusnya" via button
+[2026-07-03T11:25:11.894Z] Reviewing submission...
+[2026-07-03T11:25:11.901Z] Title verified.
+[2026-07-03T11:25:11.901Z] Clicking Hantar...
+[2026-07-03T11:25:11.921Z] [DEBUG] Found "Hantar" via button
+[2026-07-03T11:25:13.703Z] Looking for confirmation dialog...
+[2026-07-03T11:25:13.711Z] [DEBUG] after_hantar - Page text: Buku | Tambah Buku | Rumusan | Sila semak & pastikan data adalah tepat dan sahih sebelum membuat hantaran | Gambar Kulit Buku | Tiada gambar | Tarikh | 2026-07-03 | Tajuk | Sapiens: A Brief History of Humankind | Jenis Buku | Fizikal | Kategori | Bukan Fiksyen | Bilangan Mukasurat | 443 | ISBN | 9780062316097 | Penulis | Yuval Noah Harari | Penerbit | Harper | Tahun Terbitan | 2015 | Bahasa | English | Rumusan | Sejarah ringkas manusia dari zaman batu hingga era moden. Buku ini sangat menarik dan memberi banyak manfaat kepada pembaca. Buku ini sangat menarik dan memberi banyak manfaat kepada pembaca. | Pengajaran | Kerjasama secara besar-besaran membolehkan manusia menguasai dunia. | Penilaian |  Kembali | Hantar | Hantar data? | Pastikan data anda adalah tepat dan sahih sebelum membuat hantaran | Nota: | Rekod yang anda hantar akan disemak dan disahkan oleh guru/admin. | Sekiranya data didapati tidak sahih, akaun anda boleh dikenakan sekatan secara sementara atau kekal. | Batal | Pasti
+[2026-07-03T11:25:13.728Z] [DEBUG] Found "Pasti" via button
+[2026-07-03T11:25:13.729Z] Confirmation dialog found. Clicking Pasti...
+[2026-07-03T11:25:13.743Z] [DEBUG] Found "Pasti" via button
+[2026-07-03T11:25:15.926Z] Waiting for dashboard...
+[2026-07-03T11:25:18.671Z] Submission confirmed!
+[2026-07-03T11:25:18.671Z] Waiting for dashboard...
+[2026-07-03T11:27:29.414Z] ========================================
+[2026-07-03T11:27:29.416Z]   AINS NILAM Automation Bot
+[2026-07-03T11:27:29.416Z] ========================================
+[2026-07-03T11:27:29.417Z] Connecting to Chrome...
+[2026-07-03T11:27:29.854Z] Connected!
+[2026-07-03T11:27:29.855Z] Checking login status...
+[2026-07-03T11:27:31.015Z] Already logged in!
+[2026-07-03T11:27:31.398Z] Dashboard detected.
+[2026-07-03T11:27:31.834Z] 
+Total: 164 | Done: 4 | Left: 162
+[2026-07-03T11:27:31.866Z] 
+==================================================
+[2026-07-03T11:27:31.867Z] Book 3/164: "Salina"
+[2026-07-03T11:27:31.868Z] ==================================================
+[2026-07-03T11:27:31.869Z] Starting new record...
+[2026-07-03T11:27:31.875Z] Dashboard detected.
+[2026-07-03T11:27:35.222Z] Filling book info...
+[2026-07-03T11:28:15.300Z] Book info complete.
+[2026-07-03T11:28:16.659Z] Filling enrichment...
+[2026-07-03T11:28:19.848Z] Enrichment complete.
+[2026-07-03T11:28:20.808Z] Skipping cover...
+[2026-07-03T11:28:21.632Z] Reviewing...
+[2026-07-03T11:28:21.632Z] Clicking Hantar...
+[2026-07-03T11:28:23.140Z] Clicking Pasti to confirm...
+[2026-07-03T11:28:25.047Z] Waiting for Tahniah success page...
+[2026-07-03T11:28:30.397Z] Tahniah detected! Submission successful.
+[2026-07-03T11:28:30.596Z] Navigating back to dashboard...
+[2026-07-03T11:28:48.149Z] Dashboard detected.
+[2026-07-03T11:28:48.376Z] Book 3/164 done!
+[2026-07-03T11:28:48.384Z] 
+==================================================
+[2026-07-03T11:28:48.384Z] Book 4/164: "The Great Gatsby"
+[2026-07-03T11:28:48.385Z] ==================================================
+[2026-07-03T11:28:48.385Z] Starting new record...
+[2026-07-03T11:28:48.389Z] Dashboard detected.
+[2026-07-03T11:28:52.379Z] Filling book info...
+[2026-07-03T11:29:30.406Z] Book info complete.
+[2026-07-03T11:29:31.282Z] Filling enrichment...
+[2026-07-03T11:29:34.191Z] Enrichment complete.
+[2026-07-03T11:29:35.390Z] Skipping cover...
+[2026-07-03T11:29:36.006Z] Reviewing...
+[2026-07-03T11:29:36.007Z] Clicking Hantar...
+[2026-07-03T11:29:37.703Z] Clicking Pasti to confirm...
+[2026-07-03T11:29:39.722Z] Waiting for Tahniah success page...
+[2026-07-03T11:29:40.520Z] Tahniah detected! Submission successful.
+[2026-07-03T11:29:40.704Z] Navigating back to dashboard...
+[2026-07-03T11:30:17.418Z] ========================================
+[2026-07-03T11:30:17.421Z]   AINS NILAM Automation Bot
+[2026-07-03T11:30:17.421Z] ========================================
+[2026-07-03T11:30:17.421Z] Connecting to Chrome...
+[2026-07-03T11:30:17.856Z] Connected!
+[2026-07-03T11:30:17.857Z] Checking login status...
+[2026-07-03T11:30:19.241Z] Already logged in!
+[2026-07-03T11:30:19.410Z] Dashboard detected.
+[2026-07-03T11:30:19.971Z] 
+Total: 160 | Done: 5 | Left: 160
+[2026-07-03T11:30:20.006Z] 
+==================================================
+[2026-07-03T11:30:20.011Z] Book 1/160: "Thinking, Fast and Slow"
+[2026-07-03T11:30:20.016Z] ==================================================
+[2026-07-03T11:30:20.017Z] Starting new record...
+[2026-07-03T11:30:20.032Z] Dashboard detected.
+[2026-07-03T11:30:24.043Z] Filling book info...
+[2026-07-03T11:31:02.578Z] Book info complete.
+[2026-07-03T11:31:03.514Z] Filling enrichment...
+[2026-07-03T11:31:06.693Z] Enrichment complete.
+[2026-07-03T11:31:07.751Z] Skipping cover...
+[2026-07-03T11:31:08.716Z] Reviewing...
+[2026-07-03T11:31:08.717Z] Clicking Hantar...
+[2026-07-03T11:31:10.385Z] Clicking Pasti to confirm...
+[2026-07-03T11:31:12.277Z] Waiting for Tahniah success page...
+[2026-07-03T11:31:15.203Z] Tahniah detected! Submission successful.
+[2026-07-03T11:31:15.372Z] Navigating back to dashboard...
+[2026-07-03T11:31:16.912Z] Dashboard detected.
+[2026-07-03T11:31:17.267Z] Book 1/160 done!
+[2026-07-03T11:31:17.268Z] 
+==================================================
+[2026-07-03T11:31:17.269Z] Book 2/160: "Rich Dad Poor Dad"
+[2026-07-03T11:31:17.269Z] ==================================================
+[2026-07-03T11:31:17.269Z] Starting new record...
+[2026-07-03T11:31:17.273Z] Dashboard detected.
+[2026-07-03T11:31:20.772Z] Filling book info...
+[2026-07-03T11:31:59.645Z] Book info complete.
+[2026-07-03T11:32:00.674Z] Filling enrichment...
+[2026-07-03T11:32:03.540Z] Enrichment complete.
+[2026-07-03T11:32:04.561Z] Skipping cover...
+[2026-07-03T11:32:05.195Z] Reviewing...
+[2026-07-03T11:32:05.195Z] Clicking Hantar...
+[2026-07-03T11:32:06.609Z] Clicking Pasti to confirm...
+[2026-07-03T11:32:08.402Z] Waiting for Tahniah success page...
+[2026-07-03T11:32:14.874Z] Tahniah detected! Submission successful.
+[2026-07-03T11:32:15.039Z] Navigating back to dashboard...
+[2026-07-03T11:32:16.584Z] Dashboard detected.
+[2026-07-03T11:32:17.042Z] Book 2/160 done!
+[2026-07-03T11:32:17.043Z] 
+==================================================
+[2026-07-03T11:32:17.044Z] Book 3/160: "Ranjau Sepanjang Jalan"
+[2026-07-03T11:32:17.044Z] ==================================================
+[2026-07-03T11:32:17.044Z] Starting new record...
+[2026-07-03T11:32:17.049Z] Dashboard detected.
+[2026-07-03T11:32:20.448Z] Filling book info...
+[2026-07-03T11:32:58.202Z] Book info complete.
+[2026-07-03T11:32:59.001Z] Filling enrichment...
+[2026-07-03T11:33:02.027Z] Enrichment complete.
+[2026-07-03T11:33:02.892Z] Skipping cover...
+[2026-07-03T11:33:03.869Z] Reviewing...
+[2026-07-03T11:33:03.870Z] Clicking Hantar...
+[2026-07-03T11:33:05.522Z] Clicking Pasti to confirm...
+[2026-07-03T11:33:07.568Z] Waiting for Tahniah success page...
+[2026-07-03T11:33:07.575Z] Tahniah detected! Submission successful.
+[2026-07-03T11:33:07.730Z] Navigating back to dashboard...
+[2026-07-03T11:33:09.551Z] Dashboard detected.
+[2026-07-03T11:33:09.758Z] Book 3/160 done!
+[2026-07-03T11:33:09.787Z] 
+==================================================
+[2026-07-03T11:33:09.790Z] Book 4/160: "How to Win Friends and Influence People"
+[2026-07-03T11:33:09.791Z] ==================================================
+[2026-07-03T11:33:09.791Z] Starting new record...
+[2026-07-03T11:33:09.797Z] Dashboard detected.
+[2026-07-03T11:33:13.044Z] Filling book info...
+[2026-07-03T11:33:51.671Z] Book info complete.
+[2026-07-03T11:33:52.703Z] Filling enrichment...
+[2026-07-03T11:33:55.243Z] Enrichment complete.
+[2026-07-03T11:33:56.188Z] Skipping cover...
+[2026-07-03T11:33:57.486Z] Reviewing...
+[2026-07-03T11:33:57.486Z] Clicking Hantar...
+[2026-07-03T11:33:59.329Z] Clicking Pasti to confirm...
+[2026-07-03T11:34:01.353Z] Waiting for Tahniah success page...
+[2026-07-03T11:34:04.852Z] Tahniah detected! Submission successful.
+[2026-07-03T11:34:05.123Z] Navigating back to dashboard...
+[2026-07-03T11:34:06.741Z] Dashboard detected.
+[2026-07-03T11:34:07.079Z] Book 4/160 done!
+[2026-07-03T11:34:07.083Z] 
+==================================================
+[2026-07-03T11:34:07.084Z] Book 5/160: "The 7 Habits of Highly Effective People"
+[2026-07-03T11:34:07.086Z] ==================================================
+[2026-07-03T11:34:07.087Z] Starting new record...
+[2026-07-03T11:34:07.096Z] Dashboard detected.
+[2026-07-03T11:34:09.711Z] Filling book info...
+[2026-07-03T11:34:48.559Z] Book info complete.
+[2026-07-03T11:34:49.627Z] Filling enrichment...
+[2026-07-03T11:34:49.628Z] Summary expanded to 20 words.
+[2026-07-03T11:34:52.307Z] Enrichment complete.
+[2026-07-03T11:34:53.157Z] Skipping cover...
+[2026-07-03T11:34:54.361Z] Reviewing...
+[2026-07-03T11:34:54.361Z] Clicking Hantar...
+[2026-07-03T11:34:56.418Z] Clicking Pasti to confirm...
+[2026-07-03T11:34:58.309Z] Waiting for Tahniah success page...
+[2026-07-03T11:35:00.353Z] Tahniah detected! Submission successful.
+[2026-07-03T11:35:00.578Z] Navigating back to dashboard...
+[2026-07-03T11:35:02.174Z] Dashboard detected.
+[2026-07-03T11:35:02.678Z] Book 5/160 done!
+[2026-07-03T11:35:02.679Z] 
+==================================================
+[2026-07-03T11:35:02.679Z] Book 6/160: "Harry Potter and the Sorcerer's Stone"
+[2026-07-03T11:35:02.680Z] ==================================================
+[2026-07-03T11:35:02.680Z] Starting new record...
+[2026-07-03T11:35:02.685Z] Dashboard detected.
+[2026-07-03T11:35:05.989Z] Filling book info...
+[2026-07-03T11:35:44.611Z] Book info complete.
+[2026-07-03T11:35:45.260Z] Filling enrichment...
+[2026-07-03T11:35:48.543Z] Enrichment complete.
+[2026-07-03T11:35:49.710Z] Skipping cover...
+[2026-07-03T11:35:50.282Z] Reviewing...
+[2026-07-03T11:35:50.282Z] Clicking Hantar...
+[2026-07-03T11:35:52.036Z] Clicking Pasti to confirm...
+[2026-07-03T11:35:54.189Z] Waiting for Tahniah success page...
+[2026-07-03T11:35:54.469Z] Tahniah detected! Submission successful.
+[2026-07-03T11:35:54.675Z] Navigating back to dashboard...
+[2026-07-03T11:35:56.486Z] Dashboard detected.
+[2026-07-03T11:35:56.851Z] Book 6/160 done!
+[2026-07-03T11:35:56.855Z] 
+==================================================
+[2026-07-03T11:35:56.856Z] Book 7/160: "The Hobbit"
+[2026-07-03T11:35:56.857Z] ==================================================
+[2026-07-03T11:35:56.858Z] Starting new record...
+[2026-07-03T11:35:56.868Z] Dashboard detected.
+[2026-07-03T11:36:00.508Z] Filling book info...
+[2026-07-03T11:36:39.129Z] Book info complete.
+[2026-07-03T11:36:40.192Z] Filling enrichment...
+[2026-07-03T11:36:43.173Z] Enrichment complete.
+[2026-07-03T11:36:44.022Z] Skipping cover...
+[2026-07-03T11:36:45.109Z] Reviewing...
+[2026-07-03T11:36:45.110Z] Clicking Hantar...
+[2026-07-03T11:36:46.699Z] Clicking Pasti to confirm...
+[2026-07-03T11:36:48.601Z] Waiting for Tahniah success page...
+[2026-07-03T11:36:48.605Z] Tahniah detected! Submission successful.
+[2026-07-03T11:36:48.811Z] Navigating back to dashboard...
+[2026-07-03T11:36:50.450Z] Dashboard detected.
+[2026-07-03T11:36:50.774Z] Book 7/160 done!
+[2026-07-03T11:36:50.776Z] 
+==================================================
+[2026-07-03T11:36:50.776Z] Book 8/160: "Ombak Rindu"
+[2026-07-03T11:36:50.777Z] ==================================================
+[2026-07-03T11:36:50.777Z] Starting new record...
+[2026-07-03T11:36:50.781Z] Dashboard detected.
+[2026-07-03T11:36:54.555Z] Filling book info...
+[2026-07-03T11:37:33.040Z] Book info complete.
+[2026-07-03T11:37:34.410Z] Filling enrichment...
+[2026-07-03T11:37:37.632Z] Enrichment complete.
+[2026-07-03T11:37:38.398Z] Skipping cover...
+[2026-07-03T11:37:39.097Z] Reviewing...
+[2026-07-03T11:37:39.097Z] Clicking Hantar...
+[2026-07-03T11:37:40.563Z] Clicking Pasti to confirm...
+[2026-07-03T11:37:42.517Z] Waiting for Tahniah success page...
+[2026-07-03T11:37:42.523Z] Tahniah detected! Submission successful.
+[2026-07-03T11:37:42.709Z] Navigating back to dashboard...
+[2026-07-03T11:37:44.276Z] Dashboard detected.
+[2026-07-03T11:37:44.672Z] Book 8/160 done!
+[2026-07-03T11:37:44.675Z] 
+==================================================
+[2026-07-03T11:37:44.677Z] Book 9/160: "The Catcher in the Rye"
+[2026-07-03T11:37:44.677Z] ==================================================
+[2026-07-03T11:37:44.678Z] Starting new record...
+[2026-07-03T11:37:44.691Z] Dashboard detected.
+[2026-07-03T11:37:48.727Z] Filling book info...
+[2026-07-03T11:38:26.975Z] Book info complete.
+[2026-07-03T11:38:27.710Z] Filling enrichment...
+[2026-07-03T11:38:27.710Z] Summary expanded to 19 words.
+[2026-07-03T11:38:30.160Z] Enrichment complete.
+[2026-07-03T11:38:31.243Z] Skipping cover...
+[2026-07-03T11:38:31.858Z] Reviewing...
+[2026-07-03T11:38:31.858Z] Clicking Hantar...
+[2026-07-03T11:38:33.556Z] Clicking Pasti to confirm...
+[2026-07-03T11:38:35.352Z] Waiting for Tahniah success page...
+[2026-07-03T11:38:39.883Z] Tahniah detected! Submission successful.
+[2026-07-03T11:38:40.085Z] Navigating back to dashboard...
+[2026-07-03T11:38:41.680Z] Dashboard detected.
+[2026-07-03T11:38:42.132Z] Book 9/160 done!
+[2026-07-03T11:38:42.136Z] 
+==================================================
+[2026-07-03T11:38:42.136Z] Book 10/160: "Pride and Prejudice"
+[2026-07-03T11:38:42.137Z] ==================================================
+[2026-07-03T11:38:42.137Z] Starting new record...
+[2026-07-03T11:38:42.145Z] Dashboard detected.
+[2026-07-03T11:38:45.670Z] Filling book info...
+[2026-07-03T11:39:24.784Z] Book info complete.
+[2026-07-03T11:39:25.385Z] Filling enrichment...
+[2026-07-03T11:39:28.178Z] Enrichment complete.
+[2026-07-03T11:39:29.264Z] Skipping cover...
+[2026-07-03T11:39:29.947Z] Reviewing...
+[2026-07-03T11:39:29.948Z] Clicking Hantar...
+[2026-07-03T11:39:31.719Z] Clicking Pasti to confirm...
+[2026-07-03T11:39:33.643Z] Waiting for Tahniah success page...
+[2026-07-03T11:39:33.773Z] Tahniah detected! Submission successful.
+[2026-07-03T11:39:34.250Z] Navigating back to dashboard...
+[2026-07-03T11:39:35.842Z] Dashboard detected.
+[2026-07-03T11:39:36.134Z] Book 10/160 done!
+[2026-07-03T11:39:36.140Z] 
+==================================================
+[2026-07-03T11:39:36.141Z] Book 11/160: "The Diary of a Young Girl"
+[2026-07-03T11:39:36.141Z] ==================================================
+[2026-07-03T11:39:36.143Z] Starting new record...
+[2026-07-03T11:39:36.154Z] Dashboard detected.
+[2026-07-03T11:40:08.179Z] ═══════════════════════════════════════
+[2026-07-03T11:40:08.182Z]   AINS NILAM Bot
+[2026-07-03T11:40:08.182Z] ═══════════════════════════════════════
+[2026-07-03T11:40:12.291Z] Already logged in.
+[2026-07-03T11:40:12.610Z] Total: 160 | Done: 15 | Left: 150
+[2026-07-03T11:40:12.610Z] 
+[2026-07-03T11:40:12.611Z] [11/160] The Diary of a Young Girl
+[2026-07-03T11:40:18.493Z]   ✗ FAILED: Cannot click "Buku/E-Buku"
+[2026-07-03T11:40:26.071Z] [12/160] Animal Farm
+[2026-07-03T11:41:45.010Z] ═══════════════════════════════════════
+[2026-07-03T11:41:45.013Z]   AINS NILAM Bot
+[2026-07-03T11:41:45.013Z] ═══════════════════════════════════════
+[2026-07-03T11:41:49.137Z] Already logged in.
+[2026-07-03T11:41:49.401Z] Total: 160 | Done: 13 | Left: 150
+[2026-07-03T11:41:49.402Z] 
+[2026-07-03T11:41:49.402Z] [11/160] The Diary of a Young Girl
+[2026-07-03T11:41:55.285Z]   ✗ FAILED: Cannot click "Buku/E-Buku"
+[2026-07-03T11:41:56.847Z] [12/160] Animal Farm
+[2026-07-03T11:42:48.438Z] ═══════════════════════════════════════
+[2026-07-03T11:42:48.440Z]   AINS NILAM Bot v2
+[2026-07-03T11:42:48.441Z] ═══════════════════════════════════════
+[2026-07-03T11:42:53.050Z] Already logged in.
+[2026-07-03T11:42:53.054Z] Total: 160 | Done: 13 | Left: 150
+[2026-07-03T11:42:53.054Z] 
+[2026-07-03T11:42:53.055Z] [11/160] The Diary of a Young Girl
+[2026-07-03T11:43:17.711Z] ═══════════════════════════════════════
+[2026-07-03T11:43:17.713Z]   AINS NILAM Bot v2
+[2026-07-03T11:43:17.713Z] ═══════════════════════════════════════
+[2026-07-03T11:43:22.327Z] Already logged in.
+[2026-07-03T11:43:22.330Z] Total: 160 | Done: 13 | Left: 150
+[2026-07-03T11:43:22.330Z] 
+[2026-07-03T11:43:22.330Z] [11/160] The Diary of a Young Girl
+[2026-07-03T11:43:33.431Z]   ✓ Tahniah!
+[2026-07-03T11:43:34.987Z]   ✓ Done (17s)
+[2026-07-03T11:43:35.132Z]   Time: 12.7s
+[2026-07-03T11:43:35.133Z] [12/160] Animal Farm
+[2026-07-03T11:44:47.538Z] ═══════════════════════════════════════
+[2026-07-03T11:44:47.542Z]   AINS NILAM Bot v3
+[2026-07-03T11:44:47.542Z] ═══════════════════════════════════════
+[2026-07-03T11:44:52.129Z] Already logged in.
+[2026-07-03T11:44:52.132Z] Total: 160 | Done: 14 | Left: 149
+[2026-07-03T11:44:52.132Z] 
+[2026-07-03T11:44:52.133Z] [12/160] Animal Farm
+[2026-07-03T11:44:57.137Z]   ✓ Tahniah!
+[2026-07-03T11:44:57.137Z]   ✓ 5.0s
+[2026-07-03T11:44:57.141Z] [13/160] Fahrenheit 451
+[2026-07-03T11:45:02.234Z]   ✓ Tahniah!
+[2026-07-03T11:45:02.235Z]   ✓ 5.1s
+[2026-07-03T11:45:02.236Z] [14/160] The Alchemist
+[2026-07-03T11:45:14.038Z]   ✓ Tahniah!
+[2026-07-03T11:45:14.039Z]   ✓ 11.8s
+[2026-07-03T11:45:14.043Z] [15/160] The Little Prince
+[2026-07-03T11:45:18.645Z]   ✓ Tahniah!
+[2026-07-03T11:45:18.647Z]   ✓ 4.6s
+[2026-07-03T11:45:18.661Z] [16/160] Tenggelamnya Kapal Van Der Wijck
+[2026-07-03T11:45:23.308Z]   ✓ Tahniah!
+[2026-07-03T11:45:23.308Z]   ✓ 4.6s
+[2026-07-03T11:45:23.310Z] [17/160] The Da Vinci Code
+[2026-07-03T11:45:27.717Z]   ✓ Tahniah!
+[2026-07-03T11:45:27.717Z]   ✓ 4.4s
+[2026-07-03T11:45:27.718Z] [18/160] The Hunger Games
+[2026-07-03T11:45:42.244Z]   ? Submitted
+[2026-07-03T11:45:42.244Z]   ✓ 14.5s
+[2026-07-03T11:45:42.245Z] [19/160] The Kite Runner
+[2026-07-03T11:45:52.758Z]   ✓ Tahniah!
+[2026-07-03T11:45:52.758Z]   ✓ 10.5s
+[2026-07-03T11:45:52.760Z] [20/160] Life of Pi
+[2026-07-03T11:45:57.554Z]   ✓ Tahniah!
+[2026-07-03T11:45:57.555Z]   ✓ 4.8s
+[2026-07-03T11:45:57.557Z] [21/160] Bumi Manusia
+[2026-07-03T11:46:04.038Z]   ✓ Tahniah!
+[2026-07-03T11:46:04.039Z]   ✓ 6.5s
+[2026-07-03T11:46:04.041Z] [22/160] The Book Thief
+[2026-07-03T11:46:09.537Z]   ✓ Tahniah!
+[2026-07-03T11:46:09.537Z]   ✓ 5.5s
+[2026-07-03T11:46:09.538Z] [23/160] The Fault in Our Stars
+[2026-07-03T11:46:23.034Z]   ✓ Tahniah!
+[2026-07-03T11:46:23.035Z]   ✓ 13.5s
+[2026-07-03T11:46:23.037Z] [24/160] Gone Girl
+[2026-07-03T11:46:28.127Z]   ✓ Tahniah!
+[2026-07-03T11:46:28.135Z]   ✓ 5.1s
+[2026-07-03T11:46:28.136Z] [25/160] Outliers: The Story of Success
+[2026-07-03T11:46:34.733Z]   ✓ Tahniah!
+[2026-07-03T11:46:34.737Z]   ✓ 6.6s
+[2026-07-03T11:46:34.739Z] [26/160] The Power of Habit
+[2026-07-03T11:46:49.445Z]   ? Submitted
+[2026-07-03T11:46:49.445Z]   ✓ 14.7s
+[2026-07-03T11:46:49.447Z] [27/160] La Tahzan
+[2026-07-03T11:47:04.114Z]   ? Submitted
+[2026-07-03T11:47:04.114Z]   ✓ 14.7s
+[2026-07-03T11:47:04.116Z] [28/160] Mindset: The New Psychology of Success
+[2026-07-03T11:50:05.638Z] ═══════════════════════════════════════
+[2026-07-03T11:50:05.641Z]   AINS NILAM Bot v3
+[2026-07-03T11:50:05.641Z] ═══════════════════════════════════════
+[2026-07-03T11:50:10.336Z] Already logged in.
+[2026-07-03T11:50:10.351Z] Total: 160 | Done: 28 | Left: 135
+[2026-07-03T11:50:10.352Z] Rate limit delay: 5s between books
+[2026-07-03T11:50:10.352Z] 
+[2026-07-03T11:50:10.354Z] [26/160] The Power of Habit
+[2026-07-03T11:50:33.831Z]   ? Submitted
+[2026-07-03T11:50:33.831Z]   ✓ 23.5s
+[2026-07-03T11:50:33.832Z]   Cooling down 5s...
+[2026-07-03T11:50:38.844Z] [27/160] La Tahzan
+[2026-07-03T11:53:17.317Z] ═══════════════════════════════════════
+[2026-07-03T11:53:17.319Z]   AINS NILAM Bot v4
+[2026-07-03T11:53:17.320Z] ═══════════════════════════════════════
+[2026-07-03T11:53:21.948Z] Already logged in.
+[2026-07-03T11:53:21.954Z] Total: 160 | Done: 28 | Left: 135
+[2026-07-03T11:53:21.954Z] Delay between books: 5s
+[2026-07-03T11:53:21.955Z] 
+[2026-07-03T11:53:21.955Z] [26/160] The Power of Habit
+[2026-07-03T11:53:25.857Z]   Submit attempt 1/3
+[2026-07-03T11:53:27.536Z]   ⚠ RATE LIMIT DETECTED!
+[2026-07-03T11:53:27.537Z]   Page text: Buku
+
+Tambah Buku
+
+Rumusan
+Sila semak & pastikan data adalah tepat dan sahih sebelum membuat hantaran
+Gambar Kulit Buku
+Tiada gambar
+Tarikh
+
+2026-07-03
+
+Tajuk
+The Power of Habit
+Jenis Buku
+Fizikal
+Kat
+[2026-07-03T11:53:27.839Z] Screenshot: screenshots\rate_limit_1783079607542.png
+[2026-07-03T11:53:27.839Z]   Rate limit after Pasti! Waiting 60s...
+[2026-07-03T11:54:27.859Z]   Back on review page, retrying...
+[2026-07-03T11:54:27.860Z]   Submit attempt 2/3
+[2026-07-03T11:54:50.908Z]   ⚠ RATE LIMIT DETECTED!
+[2026-07-03T11:54:50.908Z]   Page text: Buku
+
+Tambah Buku
+
+Rumusan
+Sila semak & pastikan data adalah tepat dan sahih sebelum membuat hantaran
+Gambar Kulit Buku
+Tiada gambar
+Tarikh
+
+2026-07-03
+
+Tajuk
+The Power of Habit
+Jenis Buku
+Fizikal
+Kat
+[2026-07-03T11:54:51.090Z] Screenshot: screenshots\rate_limit_1783079690909.png
+[2026-07-03T11:54:51.090Z]   Rate limit after Pasti! Waiting 60s...
+[2026-07-03T11:56:41.156Z] ═══════════════════════════════════════
+[2026-07-03T11:56:41.158Z]   AINS NILAM Bot v5
+[2026-07-03T11:56:41.159Z] ═══════════════════════════════════════
+[2026-07-03T11:56:45.780Z] Already logged in.
+[2026-07-03T11:56:45.786Z] Total: 160 | Done: 28 | Left: 135
+[2026-07-03T11:56:45.787Z] Delay: 5s | Rate limit wait: 60s
+[2026-07-03T11:56:45.787Z] 
+[2026-07-03T11:56:45.788Z] [26/160] The Power of Habit
+[2026-07-03T11:56:49.439Z]   Submit attempt 1/3
+[2026-07-03T11:56:51.066Z]   ⚠ RATE LIMIT DETECTED!
+[2026-07-03T11:56:51.066Z]   Message: Buku  Tambah Buku  Rumusan Sila semak & pastikan data adalah tepat dan sahih sebelum membuat hantaran Gambar Kulit Buku Tiada gambar Tarikh  2026-07-03  Tajuk The Power of Habit Jenis Buku Fizikal Kat
+[2026-07-03T11:56:51.245Z] Screenshot: screenshots\rate_limit_error_1783079811067.png
+[2026-07-03T11:56:51.277Z]   Waiting 60s...
+[2026-07-03T11:57:51.292Z]   Back on review page, will retry submit
+[2026-07-03T11:57:51.292Z]   Submit attempt 2/3
+[2026-07-03T11:58:00.973Z]   No confirmation, retrying...
+[2026-07-03T11:58:00.973Z]   Submit attempt 3/3
+[2026-07-03T14:09:16.234Z] ═══════════════════════════════════════
+[2026-07-03T14:09:16.236Z]   AINS NILAM Bot v6 (Human Mode)
+[2026-07-03T14:09:16.237Z] ═══════════════════════════════════════
+[2026-07-03T14:09:16.237Z]   Max books: 5 | Cooldown: 10min
+[2026-07-03T14:09:16.237Z] ═══════════════════════════════════════
+[2026-07-03T14:09:19.427Z] Please login in Chrome...
+[2026-07-03T14:09:49.439Z] FATAL: page.waitForFunction: Timeout 30000ms exceeded.
+[2026-07-03T14:09:49.440Z] 
+[2026-07-03T14:09:49.441Z] ═══════════════════════════════════════
+[2026-07-03T14:09:49.441Z]   ✓ 0 | ✗ 0 | Time: 33.2s
+[2026-07-03T14:09:49.442Z] ═══════════════════════════════════════
+[2026-07-03T14:10:24.522Z] ═══════════════════════════════════════
+[2026-07-03T14:10:24.524Z]   AINS NILAM Bot v6 (Human Mode)
+[2026-07-03T14:10:24.525Z] ═══════════════════════════════════════
+[2026-07-03T14:10:24.525Z]   Max books: 5 | Cooldown: 10min
+[2026-07-03T14:10:24.525Z] ═══════════════════════════════════════
+[2026-07-03T14:10:27.127Z] Please login in Chrome...
+[2026-07-03T14:10:57.140Z] FATAL: page.waitForFunction: Timeout 30000ms exceeded.
+[2026-07-03T14:10:57.141Z] 
+[2026-07-03T14:10:57.141Z] ═══════════════════════════════════════
+[2026-07-03T14:10:57.141Z]   ✓ 0 | ✗ 0 | Time: 32.6s
+[2026-07-03T14:10:57.142Z] ═══════════════════════════════════════
+[2026-07-03T14:11:32.319Z] ═══════════════════════════════════════
+[2026-07-03T14:11:32.321Z]   AINS NILAM Bot v7
+[2026-07-03T14:11:32.323Z] ═══════════════════════════════════════
+[2026-07-03T14:11:32.361Z] Connected to Chrome: Chrome/149.0.7827.201
+[2026-07-03T14:11:32.747Z] Using tab: https://ains.moe.gov.my/login?returnUrl=/
+[2026-07-03T14:11:32.747Z] Navigating to AINS...
+[2026-07-03T14:11:35.826Z] Checking login status...
+[2026-07-03T14:11:35.827Z] Current URL: https://ains.moe.gov.my/login?returnUrl=/
+[2026-07-03T14:11:35.862Z] Page contains DELIMa: true
+[2026-07-03T14:11:35.863Z] Page contains AINS+: false
+[2026-07-03T14:11:35.863Z] Page contains Rekod: false
+[2026-07-03T14:11:35.863Z] First 200 chars: AINS Terma PerkhidmatanDasar Privasi Advanced Integrated NILAM System Sistem bersepadu untuk merekod bahan NILAM murid Baca · Hantar · Kumpul mata Log masuk dengan akaun DELIMa  Panduan log masuk Perl
+[2026-07-03T14:11:35.864Z] On login/auth page.
+[2026-07-03T14:11:35.864Z] 
+[2026-07-03T14:11:35.864Z] ========================================
+[2026-07-03T14:11:35.864Z]   NOT LOGGED IN
+[2026-07-03T14:11:35.864Z]   Please login manually in Chrome.
+[2026-07-03T14:11:35.864Z]   The bot will continue automatically.
+[2026-07-03T14:11:35.865Z] ========================================
+[2026-07-03T14:11:35.865Z] 
+[2026-07-03T14:11:36.463Z] Screenshot: screenshots\login_page_1783087895865.png
+[2026-07-03T14:11:45.209Z] Login timeout. Make sure you are logged in.
+[2026-07-03T14:11:45.210Z] FATAL: Login timeout
+[2026-07-03T14:11:45.210Z] 
+[2026-07-03T14:11:45.210Z] ═══════════════════════════════════════
+[2026-07-03T14:11:45.210Z]   ✓ 0 | ✗ 0 | 12.9s
+[2026-07-03T14:11:45.211Z] ═══════════════════════════════════════
+[2026-07-03T14:12:58.099Z] ═══════════════════════════════════════
+[2026-07-03T14:12:58.101Z]   AINS NILAM Bot (Own Chrome Profile)
+[2026-07-03T14:12:58.101Z] ═══════════════════════════════════════
+[2026-07-03T14:12:58.102Z] Launching Chrome...
+[2026-07-03T14:13:00.434Z] No session file. Opening login page...
+[2026-07-03T14:13:04.928Z] 
+[2026-07-03T14:13:04.928Z] ========================================
+[2026-07-03T14:13:04.929Z]   MANUAL LOGIN REQUIRED
+[2026-07-03T14:13:04.929Z]   A Chrome window has been opened.
+[2026-07-03T14:13:04.929Z]   Please login with your DELIMa account.
+[2026-07-03T14:13:04.930Z]   The bot will continue automatically
+[2026-07-03T14:13:04.930Z]   once you reach the dashboard.
+[2026-07-03T14:13:04.930Z] ========================================
+[2026-07-03T14:13:04.930Z] 
+[2026-07-03T14:13:37.576Z] Login timeout. Please try again.
+[2026-07-03T14:13:37.576Z] FATAL: Login timeout
+[2026-07-03T14:13:37.591Z] 
+[2026-07-03T14:13:37.592Z] ═══════════════════════════════════════
+[2026-07-03T14:13:37.593Z]   ✓ 0 | ✗ 0 | 39.5s
+[2026-07-03T14:13:37.593Z] ═══════════════════════════════════════
+[2026-07-03T14:13:38.262Z] Chrome closed. Session saved in chrome-profile folder.
+[2026-07-03T14:13:49.788Z] ═══════════════════════════════════════
+[2026-07-03T14:13:49.790Z]   AINS NILAM Bot (Own Chrome Profile)
+[2026-07-03T14:13:49.790Z] ═══════════════════════════════════════
+[2026-07-03T14:13:49.791Z] Launching Chrome...
+[2026-07-03T14:13:50.705Z] No session file. Opening login page...
+[2026-07-03T14:13:53.258Z] 
+[2026-07-03T14:13:53.258Z] ========================================
+[2026-07-03T14:13:53.258Z]   MANUAL LOGIN REQUIRED
+[2026-07-03T14:13:53.258Z]   A Chrome window has been opened.
+[2026-07-03T14:13:53.259Z]   Please login with your DELIMa account.
+[2026-07-03T14:13:53.259Z]   The bot will continue automatically
+[2026-07-03T14:13:53.259Z]   once you reach the dashboard.
+[2026-07-03T14:13:53.259Z] ========================================
+[2026-07-03T14:13:53.259Z] 
+[2026-07-03T14:14:25.393Z] Login timeout. Please try again.
+[2026-07-03T14:14:25.393Z] FATAL: Login timeout
+[2026-07-03T14:14:25.395Z] 
+[2026-07-03T14:14:25.395Z] ═══════════════════════════════════════
+[2026-07-03T14:14:25.396Z]   ✓ 0 | ✗ 0 | 35.6s
+[2026-07-03T14:14:25.396Z] ═══════════════════════════════════════
+[2026-07-03T14:14:25.766Z] Chrome closed. Session saved in chrome-profile folder.
+[2026-07-03T14:15:36.158Z] ═══════════════════════════════════════
+[2026-07-03T14:15:36.160Z]   AINS NILAM Bot
+[2026-07-03T14:15:36.161Z] ═══════════════════════════════════════
+[2026-07-03T14:15:36.161Z] Connecting to your Chrome...
+[2026-07-03T14:15:36.853Z] Navigating to AINS...
+[2026-07-03T14:15:40.370Z] Page: ains  NUR INSYIRAH BINTI KHAIRUL RAFIZI  m-12060788@moe-dl.edu.my TEA0073  SMK PUTRA  PPD BESUT, TER
+[2026-07-03T14:15:40.370Z] Already logged in!
+[2026-07-03T14:15:40.382Z] Books: 160 total | 28 done | 135 left
+[2026-07-03T14:15:40.383Z] Max per session: 5
+[2026-07-03T14:15:40.383Z] 
+[2026-07-03T14:15:40.384Z] [26/160] The Power of Habit
+[2026-07-03T14:18:59.080Z]   ✓ Tahniah!
+[2026-07-03T14:18:59.080Z]   ✓ 198.7s
+[2026-07-03T14:18:59.082Z]   Waiting 46s...
+[2026-07-03T14:19:45.090Z] [27/160] La Tahzan
+[2026-07-03T14:22:35.561Z]   ✓ Tahniah!
+[2026-07-03T14:22:35.562Z]   ✓ 170.5s
+[2026-07-03T14:22:35.565Z]   Waiting 115s...
+[2026-07-03T14:22:46.011Z] ══════════════════
+[2026-07-03T14:22:46.013Z]   AINS NILAM Bot
+[2026-07-03T14:22:46.013Z] ══════════════════
+[2026-07-03T14:22:48.630Z] Already logged in.
+[2026-07-03T14:22:48.636Z] Total: 160 | Done: 30 | Left: 133
+[2026-07-03T14:22:48.636Z] [28/160] Mindset: The New Psychology of Success
+[2026-07-03T14:23:32.845Z]   ✓ Tahniah!
+[2026-07-03T14:23:32.983Z]   ✓ 44.2s
+[2026-07-03T14:23:32.985Z]   Gap: 39s
+[2026-07-03T14:24:12.142Z] [29/160] Quiet
+[2026-07-03T14:24:58.388Z]   ✓ Tahniah!
+[2026-07-03T14:24:58.389Z]   ✓ 46.2s
+[2026-07-03T14:24:58.392Z]   Gap: 39s
+[2026-07-03T14:25:37.051Z] [30/160] Educated
+[2026-07-03T14:26:26.098Z]   ✓ Tahniah!
+[2026-07-03T14:26:26.098Z]   ✓ 49.0s
+[2026-07-03T14:26:26.099Z]   Gap: 25s
+[2026-07-03T14:26:58.411Z] ══════════════════
+[2026-07-03T14:26:58.414Z]   AINS NILAM Bot
+[2026-07-03T14:26:58.414Z] ══════════════════
+[2026-07-03T14:27:01.003Z] Already logged in.
+[2026-07-03T14:27:01.009Z] Total: 160 | Done: 33 | Left: 130
+[2026-07-03T14:27:01.010Z] [31/160] Becoming
+[2026-07-03T14:27:44.412Z]   ✓ Tahniah!
+[2026-07-03T14:27:44.413Z]   ✓ 43.4s
+[2026-07-03T14:27:44.416Z]   Gap: 10s
+[2026-07-03T14:27:54.474Z] [32/160] Steve Jobs
+[2026-07-03T14:28:42.126Z]   ✓ Tahniah!
+[2026-07-03T14:28:42.126Z]   ✓ 47.7s
+[2026-07-03T14:28:42.128Z]   Gap: 22s
+[2026-07-03T14:29:04.452Z] [33/160] Shoe Dog
+[2026-07-03T14:29:49.975Z]   ✓ Tahniah!
+[2026-07-03T14:29:49.976Z]   ✓ 45.5s
+[2026-07-03T14:29:49.977Z]   Gap: 24s
+[2026-07-03T14:30:14.262Z] [34/160] Laskar Pelangi
+[2026-07-03T14:31:04.101Z]   ✓ Tahniah!
+[2026-07-03T14:31:04.102Z]   ✓ 49.8s
+[2026-07-03T14:31:04.106Z]   Gap: 11s
+[2026-07-03T14:31:15.088Z] [35/160] Zero to One
+[2026-07-03T14:32:00.792Z]   ✓ Tahniah!
+[2026-07-03T14:32:00.793Z]   ✓ 45.7s
+[2026-07-03T14:32:00.794Z]   Gap: 15s
+[2026-07-03T14:32:15.330Z] [36/160] Good to Great
+[2026-07-03T14:32:55.492Z]   ✓ Tahniah!
+[2026-07-03T14:32:55.492Z]   ✓ 40.2s
+[2026-07-03T14:32:55.493Z]   Gap: 12s
+[2026-07-03T14:33:07.833Z] [37/160] The Lean Startup
+[2026-07-03T14:33:55.154Z]   ✓ Tahniah!
+[2026-07-03T14:33:55.155Z]   ✓ 47.3s
+[2026-07-03T14:33:55.156Z]   Gap: 12s
+[2026-07-03T14:34:07.231Z] [38/160] Think and Grow Rich
+[2026-07-03T14:34:56.019Z]   ✓ Tahniah!
+[2026-07-03T14:34:56.020Z]   ✓ 48.8s
+[2026-07-03T14:34:56.022Z]   Gap: 23s
+[2026-07-03T14:35:19.123Z] [39/160] The 4-Hour Workweek
+[2026-07-03T14:36:05.747Z]   ✓ Tahniah!
+[2026-07-03T14:36:05.748Z]   ✓ 46.6s
+[2026-07-03T14:36:05.751Z]   Gap: 13s
+[2026-07-03T14:36:18.532Z] [40/160] The Subtle Art of Not Giving a F*ck
+[2026-07-03T14:37:01.010Z]   ✓ Tahniah!
+[2026-07-03T14:37:01.010Z]   ✓ 42.5s
+[2026-07-03T14:37:01.014Z] 
+✓ 10 | ✗ 0 | 602.6s
+[2026-07-03T14:38:18.843Z] ══════════════════
+[2026-07-03T14:38:18.845Z]   AINS NILAM Bot
+[2026-07-03T14:38:18.846Z] ══════════════════
+[2026-07-03T14:38:21.463Z] Already logged in.
+[2026-07-03T14:38:21.477Z] Total: 160 | Done: 43 | Left: 120
+[2026-07-03T14:38:21.478Z] [41/160] Man's Search for Meaning
+[2026-07-03T14:39:06.375Z]   ✓ Tahniah!
+[2026-07-03T14:39:06.375Z]   ✓ 44.9s
+[2026-07-03T14:39:06.377Z]   Gap: 15s
+[2026-07-03T14:39:21.733Z] [42/160] Meditations
+[2026-07-03T14:40:06.297Z]   ✓ Tahniah!
+[2026-07-03T14:40:06.297Z]   ✓ 44.6s
+[2026-07-03T14:40:06.299Z]   Gap: 18s
+[2026-07-03T14:40:23.958Z] [43/160] Sejarah Melayu
+[2026-07-03T14:41:03.590Z]   ✓ Tahniah!
+[2026-07-03T14:41:03.590Z]   ✓ 39.6s
+[2026-07-03T14:41:03.592Z]   Gap: 21s
+[2026-07-03T14:41:24.868Z] [44/160] The Art of War
+[2026-07-03T14:42:02.321Z]   ✓ Tahniah!
+[2026-07-03T14:42:02.322Z]   ✓ 37.5s
+[2026-07-03T14:42:02.324Z]   Gap: 23s
+[2026-07-03T14:42:24.952Z] [45/160] The Prince
+[2026-07-03T14:42:36.651Z]   ✗ locator.press: Unknown key: "ò"
+Call log:
+  - waiting for locator('input:visible, textarea:visible').nth(5)
+    - locator resolved to <input type="text" id="author" class="form-control rounded-pill shadow-sm px-3"/>
+  - elementHandle.press("ò")
+
+[2026-07-03T14:42:40.154Z] [46/160] The Republic
+[2026-07-03T14:43:23.676Z]   ✓ Tahniah!
+[2026-07-03T14:43:23.676Z]   ✓ 43.5s
+[2026-07-03T14:43:23.677Z]   Gap: 20s
+[2026-07-03T14:43:43.344Z] [47/160] Crime and Punishment
+[2026-07-03T14:44:26.204Z]   ✓ Tahniah!
+[2026-07-03T14:44:26.205Z]   ✓ 42.9s
+[2026-07-03T14:44:26.208Z]   Gap: 19s
+[2026-07-03T14:44:44.917Z] [48/160] The Brothers Karamazov
+[2026-07-03T14:45:26.389Z]   ✓ Tahniah!
+[2026-07-03T14:45:26.389Z]   ✓ 41.5s
+[2026-07-03T14:45:26.391Z]   Gap: 19s
+[2026-07-03T14:45:45.537Z] [49/160] War and Peace
+[2026-07-03T14:46:30.337Z]   ✓ Tahniah!
+[2026-07-03T14:46:30.338Z]   ✓ 44.8s
+[2026-07-03T14:46:30.342Z]   Gap: 12s
+[2026-07-03T14:46:42.718Z] [50/160] Anna Karenina
+[2026-07-03T14:47:22.748Z]   ✓ Tahniah!
+[2026-07-03T14:47:22.748Z]   ✓ 40.0s
+[2026-07-03T14:47:22.751Z]   Gap: 13s
+[2026-07-03T14:47:35.779Z] [51/160] Les Misérables
+[2026-07-03T14:47:38.581Z]   ✗ locator.press: Unknown key: "é"
+Call log:
+  - waiting for locator('input:visible, textarea:visible').first()
+    - locator resolved to <input id="title" type="text" class="form-control rounded-pill shadow-sm px-3"/>
+  - elementHandle.press("é")
+
+[2026-07-03T14:47:41.839Z] [52/160] The Count of Monte Cristo
+[2026-07-03T14:48:26.827Z]   ✓ Tahniah!
+[2026-07-03T14:48:26.828Z]   ✓ 45.0s
+[2026-07-03T14:48:26.830Z]   Gap: 19s
+[2026-07-03T14:48:45.801Z] [53/160] Don Quixote
+[2026-07-03T14:49:26.117Z]   ✓ Tahniah!
+[2026-07-03T14:49:26.117Z]   ✓ 40.3s
+[2026-07-03T14:49:26.120Z]   Gap: 24s
+[2026-07-03T14:49:50.485Z] [54/160] Moby-Dick
+[2026-07-03T14:50:35.264Z]   ✓ Tahniah!
+[2026-07-03T14:50:35.265Z]   ✓ 44.8s
+[2026-07-03T14:50:35.266Z]   Gap: 25s
+[2026-07-03T14:50:59.861Z] [55/160] Frankenstein
+[2026-07-03T14:51:40.625Z]   ✓ Tahniah!
+[2026-07-03T14:51:40.625Z]   ✓ 40.8s
+[2026-07-03T14:51:40.626Z]   Gap: 11s
+[2026-07-03T14:51:51.383Z] [56/160] Dracula
+[2026-07-03T14:52:39.714Z]   ✓ Tahniah!
+[2026-07-03T14:52:39.715Z]   ✓ 48.3s
+[2026-07-03T14:52:39.716Z] 
+✓ 14 | ✗ 2 | 860.9s
+[2026-07-03T14:54:19.977Z] ══════════════════
+[2026-07-03T14:54:19.979Z]   AINS NILAM Bot
+[2026-07-03T14:54:19.980Z] ══════════════════
+[2026-07-03T14:54:22.604Z] Already logged in.
+[2026-07-03T14:54:22.610Z] Total: 160 | Done: 59 | Left: 104
+[2026-07-03T14:54:22.610Z] [57/160] Komsas: Sejambak Bakti
+[2026-07-03T14:55:08.604Z]   ✓ Tahniah!
+[2026-07-03T14:55:08.606Z]   ✓ 46.0s
+[2026-07-03T14:55:08.610Z]   Gap: 17s
+[2026-07-03T14:58:03.886Z] ══════════════════
+[2026-07-03T14:58:03.889Z]   AINS NILAM Bot
+[2026-07-03T14:58:03.889Z] ══════════════════
+[2026-07-03T14:58:06.498Z] Already logged in.
+[2026-07-03T14:58:06.505Z] Total: 160 | Done: 0 | Left: 160
+[2026-07-03T14:58:06.505Z] [1/160] Thinking, Fast and Slow
+[2026-07-03T14:59:00.534Z]   ✗ Submit failed
+[2026-07-03T14:59:03.857Z] [2/160] Rich Dad Poor Dad
+[2026-07-03T14:59:59.263Z]   ✗ Submit failed
+[2026-07-03T15:01:03.223Z] ══════════════════
+[2026-07-03T15:01:03.228Z]   AINS NILAM Bot
+[2026-07-03T15:01:03.228Z] ══════════════════
+[2026-07-03T15:01:05.864Z] Already logged in.
+[2026-07-03T15:01:05.869Z] Total: 160 | Done: 0 | Left: 160
+[2026-07-03T15:01:05.870Z] [1/160] Thinking, Fast and Slow
+[2026-07-03T15:01:59.425Z]   ✗ Submit failed
+[2026-07-03T15:02:02.776Z] [2/160] Rich Dad Poor Dad
+[2026-07-04T00:21:38.123Z] ══════════════════
+[2026-07-04T00:21:38.146Z]   AINS NILAM Bot
+[2026-07-04T00:21:38.150Z] ══════════════════
+[2026-07-04T00:21:49.596Z] Already logged in.
+[2026-07-04T00:21:49.651Z] Total: 160 | Done: 0 | Left: 160
+[2026-07-04T00:21:49.706Z] [1/160] Thinking, Fast and Slow
+[2026-07-04T00:24:05.686Z] ══════════════════
+[2026-07-04T00:24:05.688Z]   AINS NILAM Bot
+[2026-07-04T00:24:05.688Z] ══════════════════
+[2026-07-04T00:24:08.272Z] Already logged in.
+[2026-07-04T00:24:08.287Z] Total: 160 | Done: 0 | Left: 160
+[2026-07-04T00:24:08.287Z] [1/160] Thinking, Fast and Slow
+[2026-07-04T00:24:58.846Z]   ✗ Submit failed
+[2026-07-04T00:25:02.597Z] [2/160] Rich Dad Poor Dad
+[2026-07-05T11:25:56.717Z] ══════════════════
+[2026-07-05T11:25:56.750Z]   AINS NILAM Bot
+[2026-07-05T11:25:56.750Z] ══════════════════
+[2026-07-05T11:25:59.871Z] Already logged in.
+[2026-07-05T11:26:00.446Z] Total: 160 | Done: 0 | Left: 160
+[2026-07-05T11:26:00.448Z] [1/160] Thinking, Fast and Slow

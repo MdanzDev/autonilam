@@ -1,0 +1,24 @@
+{
+  "name": "ains-nilam-automation",
+  "version": "1.0.0",
+  "description": "Automated bot for Advanced Integrated NILAM System (AINS) book recording",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "debug": "node server.js --debug"
+  },
+  "keywords": [
+    "ains",
+    "nilam",
+    "automation",
+    "playwright"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "playwright": "^1.40.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
