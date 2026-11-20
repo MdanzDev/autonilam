@@ -103,9 +103,10 @@ async function handleCooldown(page) {
   return false;
 }
 
+// ULTIMATE DROPDOWN HANDLER
 async function selectDropdown(page, labelName, valueToSelect) {
   log(`    ↳ Memilih ${labelName}: "${valueToSelect}"...`, 'dim');
-  await sleep(rand(400, 800));
+  await sleep(rand(400, 600));
 
   const label = page.locator('label').filter({ hasText: new RegExp(labelName, 'i') }).first();
   let combobox;
@@ -121,20 +122,28 @@ async function selectDropdown(page, labelName, valueToSelect) {
 
   try {
     const isNative = await combobox.evaluate(el => el.tagName.toLowerCase() === 'select').catch(() => false);
+    
     if (isNative) {
-      // FIXED: Manually find option text, then select by exact string
       const options = await combobox.evaluate(el => Array.from(el.options).map(o => ({ value: o.value, text: o.text.trim() })));
-      const match = options.find(o => o.text.toLowerCase().replace(/\s+/g, '').includes(valueToSelect.toLowerCase().replace(/\s+/g, '').replace('-', '')));
       
+      // Strip ALL spaces and punctuation for extreme matching
+      const norm = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+      
+      const match = options.find(o => norm(o.text) === norm(valueToSelect)) || 
+                    options.find(o => norm(o.text).includes(norm(valueToSelect)));
+
       if (match) {
         await combobox.selectOption(match.value, { timeout: 3000 });
-        log(`    ✓ (Native) Berjaya pilih "${match.text}"`, 'dim');
+        log(`    ✓ Berjaya pilih "${match.text}"`, 'dim');
       } else {
-        log(`    ⚠ Pilihan "${valueToSelect}" tidak dijumpai`, 'yellow');
+        // Print exact options to console so you can fix books.json
+        const avail = options.map(o => o.text).filter(t => t).join(', ');
+        log(`    ⚠ GAGAL! Pilihan "${valueToSelect}" tiada. Pilihan yang ada: [${avail}]`, 'red');
       }
       return;
     }
     
+    // React-select fallback
     await combobox.click({ timeout: 5000, force: true });
     await sleep(1000); 
     
@@ -151,28 +160,6 @@ async function selectDropdown(page, labelName, valueToSelect) {
     log(`    ⚠ Isu dropdown ${labelName}: ${e.message.substring(0, 50)}...`, 'yellow');
   }
   await sleep(rand(300, 500));
-}
-
-// REBUILT: Uses Playwright's native getByLabel which is lightning fast
-async function fillInput(page, labelName, value) {
-  log(`    ↳ Isi ${labelName}: "${String(value).substring(0, 20)}..."`, 'dim');
-  await sleep(rand(200, 400));
-  
-  try {
-    const loc = page.getByLabel(new RegExp(labelName, 'i')).first();
-    if (await loc.isVisible({ timeout: 2000 })) {
-      await loc.fill(String(value), { timeout: 3000 });
-      return;
-    }
-  } catch (e) {}
-
-  // Fallback to placeholder/name just in case
-  try {
-    await page.locator(`input[name*="${labelName}" i]:visible, input[placeholder*="${labelName}" i]:visible`).first().fill(String(value), { timeout: 3000 });
-  } catch (e) {
-    log(`    ⚠ Gagal isi ${labelName}`, 'yellow');
-  }
-  await sleep(rand(200, 400));
 }
 
 async function clickNext(page) {
@@ -199,12 +186,27 @@ async function fillStep1(page, book) {
 
 async function fillStep2(page, book) {
   log('  Step 2/4: Maklumat Bacaan', 'cyan');
-  await fillInput(page, 'Tajuk', book.title);
-  await fillInput(page, 'Tahun Terbitan', book.year || 2023);
-  await fillInput(page, 'Penulis', book.author || 'Penulis Tidak Diketahui');
-  if (book.isbn) await fillInput(page, 'ISBN', book.isbn);
-  await fillInput(page, 'Mukasurat', book.pages || 100);
-  await fillInput(page, 'Penerbit', book.publisher || 'Penerbit Umum');
+  const inputs = page.locator('input[type="text"]:visible, input[type="number"]:visible');
+  
+  // Index-based filling (Top to Bottom based on AINS UI)
+  const fields = [
+    { label: 'Tajuk', value: book.title },
+    { label: 'Tahun Terbitan', value: book.year || 2023 },
+    { label: 'Penulis', value: book.author || 'Penulis Tidak Diketahui' },
+    { label: 'ISBN', value: book.isbn || '' },
+    { label: 'Bilangan Mukasurat', value: book.pages || 100 },
+    { label: 'Penerbit', value: book.publisher || 'Penerbit Umum' }
+  ];
+  
+  for (let i = 0; i < fields.length; i++) {
+    log(`    ↳ Isi ${fields[i].label}: "${String(fields[i].value).substring(0, 20)}..."`, 'dim');
+    if (await inputs.count() > i) {
+       await inputs.nth(i).fill(String(fields[i].value), { timeout: 3000 }).catch(() => {
+           log(`    ⚠ Gagal isi ${fields[i].label}`, 'yellow');
+       });
+    }
+    await sleep(rand(150, 300));
+  }
   
   await clickNext(page);
   await waitForText(page, ['Penilaian dan Rumusan']);
@@ -301,7 +303,7 @@ async function processBook(page, book, index, total) {
 
 async function main() {
   log('══════════════════', 'bright');
-  log('  AINS NILAM Bot (Fixed Dropdowns & Inputs)', 'bright');
+  log('  AINS NILAM Bot (Overnight Mode)', 'bright');
   log('══════════════════', 'bright');
 
   ensureDir(CONFIG.SCREENSHOT_DIR);
