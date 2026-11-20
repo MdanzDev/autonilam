@@ -25,7 +25,6 @@ const COLORS = {
 
 const logStream = fs.createWriteStream(path.resolve(CONFIG.LOG_FILE), { flags: 'a' });
 
-// NEW: Readable Timestamp Function
 function getReadableTimestamp() {
   const d = new Date();
   const pad = (n) => String(n).padStart(2, '0');
@@ -33,7 +32,6 @@ function getReadableTimestamp() {
 }
 
 function log(message, color = 'reset') {
-  // Uses the new readable timestamp
   const cleanMessage = `[${getReadableTimestamp()}] ${message}`;
   console.log(`${COLORS[color] || ''}${cleanMessage}${COLORS.reset}`);
   logStream.write(cleanMessage.replace(/\x1b\[\d+m/g, '') + '\n');
@@ -41,21 +39,6 @@ function log(message, color = 'reset') {
 
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
-
-// Live Countdown Timer
-async function countdownSleep(totalSeconds, reason = "Cooldown") {
-  let remaining = totalSeconds;
-  while (remaining > 0) {
-    const mins = Math.floor(remaining / 60);
-    const secs = remaining % 60;
-    log(`⏳ [${reason}] Menunggu... ${mins}m ${secs}s berbaki`, 'yellow');
-    
-    const step = remaining > 10 ? 10 : remaining; 
-    await sleep(step * 1000);
-    remaining -= step;
-  }
-  log(`⏳ [${reason}] Selesai menunggu.`, 'green');
-}
 
 function loadJSON(filePath) {
   const resolved = path.resolve(filePath);
@@ -101,13 +84,34 @@ async function checkForBan(page) {
   return false;
 }
 
-// ROBUST DROPDOWN HANDLER
+// NEW: Active Refresh Cooldown Handler
+async function handleCooldown(page) {
+  log(`⏳ Cooldown detected. Memulakan refresh automatik setiap 20 saat (Maksimum 5 minit)...`, 'yellow');
+  let elapsed = 0;
+  
+  while (elapsed < 300) { // Wait up to 5 minutes
+    await sleep(20000); // Wait 20 seconds
+    elapsed += 20;
+    
+    log(`⏳ [Cooldown] Memuat semula halaman... (${elapsed}s berlalu)`, 'yellow');
+    
+    // Force a hard reload of the SPA
+    await page.goto(CONFIG.RECORD_URL, { waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {});
+    await sleep(2500);
+
+    if (await waitForText(page, ['Kategori dan Jenis'], 3000)) {
+      log(`✓ Cooldown tamat! Borang dibuka semula.`, 'green');
+      return true;
+    }
+  }
+  return false;
+}
+
 async function selectDropdown(page, labelName, valueToSelect) {
   log(`    ↳ Memilih ${labelName}: "${valueToSelect}"...`, 'dim');
   await sleep(rand(400, 800));
 
   const label = page.locator('label').filter({ hasText: new RegExp(labelName, 'i') }).first();
-  
   let combobox;
   if (await label.count() > 0) {
     combobox = label.locator('xpath=following::div[@role="combobox"][1] | following::select[1]').first();
@@ -125,10 +129,8 @@ async function selectDropdown(page, labelName, valueToSelect) {
       log(`    ✓ (Native) Berjaya pilih "${valueToSelect}"`, 'dim');
       return;
     }
-
     await combobox.click({ timeout: 5000, force: true });
     await sleep(800); 
-    
     const option = page.getByRole('option', { name: valueToSelect, exact: true }).last();
     if (await option.isVisible({ timeout: 2000 }).catch(() => false)) {
       await option.click({ timeout: 2000 });
@@ -147,7 +149,6 @@ async function selectDropdown(page, labelName, valueToSelect) {
   await sleep(rand(300, 500));
 }
 
-// ROBUST INPUT HANDLER
 async function fillInput(page, labelName, value) {
   log(`    ↳ Isi ${labelName}: "${String(value).substring(0, 20)}..."`, 'dim');
   const label = page.locator('label').filter({ hasText: new RegExp(labelName, 'i') }).first();
@@ -156,11 +157,9 @@ async function fillInput(page, labelName, value) {
   if (await label.count() > 0) {
     input = label.locator('xpath=following::input[1] | following::textarea[1]').first();
   }
-  
   if (!input || await input.count() === 0) {
     input = page.getByPlaceholder(new RegExp(labelName, 'i')).first();
   }
-
   if (input && await input.count() > 0) {
     await input.fill(String(value), { timeout: 5000 }).catch(() => {
       log(`    ⚠ Gagal isi ${labelName}`, 'yellow');
@@ -260,9 +259,9 @@ async function processBook(page, book, index, total) {
   log(`\n[${index}/${total}] Memproses: ${book.title}`, 'magenta');
   
   let formLoaded = false;
-  let cooldownAttempts = 0;
+  let attempts = 0;
 
-  while (!formLoaded && cooldownAttempts < 5) {
+  while (!formLoaded && attempts < 3) {
     log('  Membuka halaman rekod...', 'dim');
     await page.goto(CONFIG.RECORD_URL, { waitUntil: 'domcontentloaded', timeout: 20000 });
     await sleep(2500); 
@@ -273,16 +272,15 @@ async function processBook(page, book, index, total) {
       formLoaded = true;
     } 
     else if (await waitForText(page, ['hanya boleh ditambah semula', 'Sila cuba lagi', 'Makluman'], 2000)) {
-      cooldownAttempts++;
-      await countdownSleep(185, `AINS Cooldown (Cubaan ${cooldownAttempts})`); 
+      attempts++;
+      formLoaded = await handleCooldown(page);
+      if (!formLoaded) throw new Error('Gagal melepasi cooldown selepas 5 minit.');
     } 
     else {
       await takeScreenshot(page, 'no_form');
       throw new Error('Cannot load form (unknown page state)');
     }
   }
-
-  if (!formLoaded) throw new Error('Max cooldown retries reached');
 
   await fillStep1(page, book);
   await fillStep2(page, book);
@@ -294,7 +292,7 @@ async function processBook(page, book, index, total) {
 
 async function main() {
   log('══════════════════', 'bright');
-  log('  AINS NILAM Bot (Readable Timestamps)', 'bright');
+  log('  AINS NILAM Bot (Active Refresh)', 'bright');
   log('══════════════════', 'bright');
 
   ensureDir(CONFIG.SCREENSHOT_DIR);
