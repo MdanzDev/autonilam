@@ -15,7 +15,6 @@ const CONFIG = {
   LONG_TIMEOUT: 600000, 
   MAX_BOOKS_PER_SESSION: 30,
   
-  // Small gap between books. The 3-minute wait is handled dynamically inside the form loop.
   MIN_BOOK_GAP: 5000, 
   MAX_BOOK_GAP: 10000  
 };
@@ -63,9 +62,13 @@ async function takeScreenshot(page, name) {
   try { ensureDir(CONFIG.SCREENSHOT_DIR); await page.screenshot({ path: path.join(CONFIG.SCREENSHOT_DIR, `${name}_${Date.now()}.png`), fullPage: true }); } catch {}
 }
 
+// UPDATED: Case-insensitive text matching so it catches "Terima kasih" AND "terima kasih"
 async function waitForText(page, textArray, timeout = 15000) {
   try {
-    await page.waitForFunction((texts) => texts.some(t => document.body.innerText.includes(t)), textArray, { timeout });
+    await page.waitForFunction((texts) => {
+      const bodyText = document.body.innerText.toLowerCase();
+      return texts.some(t => bodyText.includes(t.toLowerCase()));
+    }, textArray, { timeout });
     return true;
   } catch { return false; }
 }
@@ -171,8 +174,9 @@ async function fillStep4AndSubmit(page) {
   await page.locator('button:has-text("Hantar Rekod")').first().click({ timeout: 5000 });
   await sleep(rand(2000, 3000));
   
-  if (await waitForText(page, ['Tahniah', 'Berjaya', 'rekod anda telah dihantar'], 10000) || page.url().includes('/web/dashboard')) {
-    log('  ✓ Tahniah! Rekod berjaya dihantar.', 'green');
+  // UPDATED: Now specifically checks for the text in your screenshot
+  if (await waitForText(page, ['terima kasih', 'telah dihantar', 'tahniah', 'berjaya'], 10000) || page.url().includes('/web/dashboard')) {
+    log('  ✓ Terima kasih! Rekod berjaya dihantar.', 'green');
     return true;
   }
   throw new Error('Failed to verify submission success.');
@@ -185,24 +189,20 @@ async function processBook(page, book, index, total) {
   let formLoaded = false;
   let cooldownAttempts = 0;
 
-  // Loop to handle AINS 3-minute cooldown screen dynamically
   while (!formLoaded && cooldownAttempts < 5) {
     await page.goto(CONFIG.RECORD_URL, { waitUntil: 'domcontentloaded', timeout: 20000 });
     await sleep(2500); 
 
     if (await checkForBan(page)) throw new Error('BANNED');
     
-    // 1. Check if the form is ready
     if (await waitForText(page, ['Kategori dan Jenis'], 5000)) {
       formLoaded = true;
     } 
-    // 2. Check if the AINS 3-minute Makluman/Cooldown screen is showing
     else if (await waitForText(page, ['hanya boleh ditambah semula', 'Sila cuba lagi', 'Makluman'], 2000)) {
       cooldownAttempts++;
       log(`⏳ AINS Cooldown Detected (Try ${cooldownAttempts}). Waiting 3 mins 5 secs...`, 'yellow');
-      await sleep(185000); // Wait 3 minutes + 5 seconds buffer
+      await sleep(185000); 
     } 
-    // 3. Unknown state (maybe page failed to load)
     else {
       await takeScreenshot(page, 'no_form');
       throw new Error('Cannot load form (unknown page state)');
@@ -221,7 +221,7 @@ async function processBook(page, book, index, total) {
 
 async function main() {
   log('══════════════════', 'bright');
-  log('  AINS NILAM Bot (Cooldown Handler)', 'bright');
+  log('  AINS NILAM Bot (Confirmation Fix)', 'bright');
   log('══════════════════', 'bright');
 
   ensureDir(CONFIG.SCREENSHOT_DIR);
@@ -254,7 +254,6 @@ async function main() {
 
     const text = await page.locator('body').innerText().catch(() => '');
     
-    // If not logged in, wait for manual Google Login
     if (text.includes('Google') || page.url().includes('accounts.google.com') || page.url().includes('login')) {
       log('⚠ Sila klik "Login with Google" dan log masuk di tetingkap Chrome...', 'yellow');
       await page.waitForFunction(
