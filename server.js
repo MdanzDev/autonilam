@@ -1,6 +1,7 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
+const http = require('http');
 
 const CONFIG = {
   BASE_URL: "https://ains.moe.gov.my",
@@ -10,6 +11,8 @@ const CONFIG = {
   FAILED_FILE: "./failed.json",
   LOG_FILE: "./automation.log",
   SCREENSHOT_DIR: "./screenshots",
+  CHROME_DEBUG_HOST: "127.0.0.1",
+  CHROME_DEBUG_PORT: 9222,
   TIMEOUT: 30000,
   LONG_TIMEOUT: 300000,
   MAX_BOOKS_PER_SESSION: 30,
@@ -78,6 +81,7 @@ async function checkForBan(page) {
 async function selectCustomDropdown(page, index, valueToSelect) {
   await sleep(rand(500, 1000));
   
+  // Try native <select> first (most reliable)
   const nativeSelects = page.locator('select');
   if (await nativeSelects.count() > index) {
     const select = nativeSelects.nth(index);
@@ -86,11 +90,12 @@ async function selectCustomDropdown(page, index, valueToSelect) {
         await select.selectOption({ label: valueToSelect });
         return;
       } catch (e) {
-        // Fallback to custom dropdown
+        // Fallback to custom dropdown if option doesn't exist natively
       }
     }
   }
   
+  // Custom React Dropdown fallback
   const dropdowns = page.locator('div[role="combobox"], button, .css-1dimb5e-control, [class*="control"]');
   const target = dropdowns.nth(index);
   await target.click({ force: true });
@@ -232,13 +237,103 @@ async function processBook(page, book, index, total) {
   log(`  ✓ Selesai dalam ${((Date.now() - start) / 1000).toFixed(1)}s`, 'green');
 }
 
+// ───────────────────────── Chrome connection ─────────────────────────
+
+const LAUNCH_HINT = 'start chrome --remote-debugging-port=9222 --user-data-dir="C:\\chrome-debug-profile"';
+
+// Plain HTTP call to Chrome's DevTools endpoint (127.0.0.1 avoids the Node 17+ "localhost -> ::1" problem)
+function devtoolsRequest(pathname, method = 'GET') {
+  return new Promise((resolve, reject) => {
+    const req = http.request(
+      { host: CONFIG.CHROME_DEBUG_HOST, port: CONFIG.CHROME_DEBUG_PORT, path: pathname, method, timeout: 5000 },
+      (res) => {
+        let data = '';
+        res.on('data', c => data += c);
+        res.on('end', () => resolve(data));
+      }
+    );
+    req.on('timeout', () => req.destroy(new Error('DevTools request timed out')));
+    req.on('error', reject);
+    req.end();
+  });
+}
+
+async function connectToChrome() {
+  try {
+    const version = JSON.parse(await devtoolsRequest('/json/version'));
+    return version.webSocketDebuggerUrl;
+  } catch (e) {
+    const err = new Error(`Cannot reach Chrome on port ${CONFIG.CHROME_DEBUG_PORT}: ${e.message}`);
+    err.code = 'CHROME_NOT_REACHABLE';
+    throw err;
+  }
+}
+
+// What the debug-port Chrome itself says it has open (useful to see if you're attached to the right Chrome)
+async function listDebugTabs() {
+  try {
+    const tabs = JSON.parse(await devtoolsRequest('/json/list'));
+    return tabs.filter(t => t.type === 'page');
+  } catch { return []; }
+}
+
+function allPages(browser) {
+  return browser.contexts().flatMap(c => c.pages()).filter(p => !p.isClosed() && !p.url().startsWith('devtools://'));
+}
+
+// Prefer an existing AINS tab, then any normal web tab, then anything else
+function pickPage(browser) {
+  const pages = allPages(browser);
+  return pages.find(p => p.url().includes('ains.moe.gov.my'))
+      || pages.find(p => /^https?:/.test(p.url()))
+      || pages[0];
+}
+
+async function getWorkingPage(browser) {
+  const tabs = await listDebugTabs();
+  log(`Chrome debug port reports ${tabs.length} open tab(s)${tabs.length ? ':' : '.'}`, 'dim');
+  tabs.forEach(t => log(`  - ${t.url}`, 'dim'));
+
+  // 1) Existing tabs. Playwright attaches to them asynchronously, so poll for up to 10s.
+  for (let i = 0; i < 20; i++) {
+    const p = pickPage(browser);
+    if (p) return p;
+    await sleep(500);
+  }
+
+  // 2) Ask Playwright to open a tab (and show the real error if it can't)
+  log('No tabs visible to Playwright. Trying to open one...', 'yellow');
+  for (const ctx of browser.contexts()) {
+    try { return await ctx.newPage(); }
+    catch (err) { log(`  context.newPage() failed: ${err.message}`, 'yellow'); }
+  }
+
+  // 3) Ask Chrome itself to open a tab through its DevTools HTTP endpoint
+  try {
+    await devtoolsRequest('/json/new?about:blank', 'PUT');
+    for (let i = 0; i < 10; i++) {
+      await sleep(500);
+      const p = pickPage(browser);
+      if (p) return p;
+    }
+  } catch (err) {
+    log(`  /json/new failed: ${err.message}`, 'yellow');
+  }
+
+  const err = new Error('Connected to Chrome, but could not get or open a tab.');
+  err.code = 'NO_PAGE';
+  throw err;
+}
+
+// ───────────────────────── Main ─────────────────────────
+
 async function main() {
   log('══════════════════', 'bright');
-  log('  AINS NILAM Bot (Standalone)', 'bright');
+  log('  AINS NILAM Bot (Fixed)', 'bright');
   log('══════════════════', 'bright');
 
   ensureDir(CONFIG.SCREENSHOT_DIR);
-  let context, page, success = 0, failed = 0;
+  let browser, page, success = 0, failed = 0;
   const startTime = Date.now();
 
   try {
@@ -246,27 +341,9 @@ async function main() {
       throw new Error("books.json not found! Please create it in this folder.");
     }
 
-    log('Launching Chrome...', 'yellow');
-    
-    // Try using Google Chrome first, fallback to Chromium
-    try {
-      context = await chromium.launchPersistentContext('C:\\chrome-debug-profile', {
-        channel: 'chrome',
-        headless: false,
-        viewport: null,
-        args: ['--start-maximized']
-      });
-    } catch (e) {
-      log('Google Chrome not found, using Playwright Chromium...', 'yellow');
-      context = await chromium.launchPersistentContext('C:\\chrome-debug-profile', {
-        headless: false,
-        viewport: null,
-        args: ['--start-maximized']
-      });
-    }
-
-    const pages = context.pages();
-    page = pages.length > 0 ? pages[0] : await context.newPage();
+    browser = await chromium.connectOverCDP(await connectToChrome());
+    page = await getWorkingPage(browser);
+    await page.bringToFront().catch(() => {});
     page.setDefaultTimeout(CONFIG.TIMEOUT);
 
     await page.goto(CONFIG.BASE_URL, { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {});
@@ -274,7 +351,7 @@ async function main() {
 
     const text = await page.locator('body').innerText().catch(() => '');
     if (text.includes('DELIMa') && !text.includes('AINS')) {
-      log('Sila login di tetingkap Chrome yang terbuka...', 'yellow');
+      log('Sila login di Chrome...', 'yellow');
       await page.waitForFunction(() => document.body.innerText.includes('AINS') || document.body.innerText.includes('Papan Pemuka'), { timeout: CONFIG.LONG_TIMEOUT });
       log('Login berjaya!', 'green');
     } else { log('Sudah login.', 'green'); }
@@ -312,10 +389,18 @@ async function main() {
       }
     }
   } catch (e) {
-    log(`Error: ${e.message}`, 'red');
+    if (e.code === 'CHROME_NOT_REACHABLE') {
+      log(e.message, 'red');
+      log(`Sila buka Chrome (tutup semua tetingkap Chrome dahulu), kemudian jalankan:  ${LAUNCH_HINT}`, 'yellow');
+    } else if (e.code === 'NO_PAGE') {
+      log(e.message, 'red');
+      log('Close ALL Chrome windows (check Task Manager for leftover chrome.exe), relaunch with the command above, then run again.', 'yellow');
+    } else {
+      log(`Error: ${e.message}`, 'red');
+    }
   } finally {
     log(`\n✓ Berjaya: ${success} | ✗ Gagal: ${failed} | Masa: ${((Date.now()-startTime)/1000).toFixed(1)}s`, 'cyan');
-    if (context) await context.close().catch(() => {});
+    if (browser) await browser.close().catch(() => {});
     logStream.end();
   }
 }
