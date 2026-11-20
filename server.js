@@ -25,9 +25,16 @@ const COLORS = {
 
 const logStream = fs.createWriteStream(path.resolve(CONFIG.LOG_FILE), { flags: 'a' });
 
+// NEW: Readable Timestamp Function
+function getReadableTimestamp() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
 function log(message, color = 'reset') {
-  const timestamp = new Date().toISOString();
-  const cleanMessage = `[${timestamp}] ${message}`;
+  // Uses the new readable timestamp
+  const cleanMessage = `[${getReadableTimestamp()}] ${message}`;
   console.log(`${COLORS[color] || ''}${cleanMessage}${COLORS.reset}`);
   logStream.write(cleanMessage.replace(/\x1b\[\d+m/g, '') + '\n');
 }
@@ -94,28 +101,24 @@ async function checkForBan(page) {
   return false;
 }
 
-// ROBUST DROPDOWN HANDLER (No more hanging!)
+// ROBUST DROPDOWN HANDLER
 async function selectDropdown(page, labelName, valueToSelect) {
   log(`    ↳ Memilih ${labelName}: "${valueToSelect}"...`, 'dim');
   await sleep(rand(400, 800));
 
-  // 1. Find the specific label on the page
   const label = page.locator('label').filter({ hasText: new RegExp(labelName, 'i') }).first();
   
-  // 2. Try to find the dropdown immediately following that label
   let combobox;
   if (await label.count() > 0) {
     combobox = label.locator('xpath=following::div[@role="combobox"][1] | following::select[1]').first();
   }
   
-  // Fallback if label isn't found or isn't structured normally
   if (!combobox || await combobox.count() === 0) {
     const index = labelName === 'Kategori' ? 0 : (labelName === 'Jenis Bahan' ? 1 : 2);
     combobox = page.locator('div[role="combobox"], select').nth(index);
   }
 
   try {
-    // Check if it's a standard HTML <select>
     const isNative = await combobox.evaluate(el => el.tagName.toLowerCase() === 'select').catch(() => false);
     if (isNative) {
       await combobox.selectOption({ label: valueToSelect }, { timeout: 3000 });
@@ -123,17 +126,14 @@ async function selectDropdown(page, labelName, valueToSelect) {
       return;
     }
 
-    // Click the React dropdown
     await combobox.click({ timeout: 5000, force: true });
-    await sleep(800); // Wait for animation to open
+    await sleep(800); 
     
-    // Look for the option. Strict 2000ms timeout so it fails fast if not found.
     const option = page.getByRole('option', { name: valueToSelect, exact: true }).last();
     if (await option.isVisible({ timeout: 2000 }).catch(() => false)) {
       await option.click({ timeout: 2000 });
       log(`    ✓ Berjaya pilih "${valueToSelect}"`, 'dim');
     } else {
-      // Fallback: Type and Enter (React-Select standard behavior)
       log(`    ⚠ Gagal cari pilihan, cuba taip & Enter...`, 'yellow');
       await page.keyboard.type(valueToSelect);
       await sleep(500);
@@ -141,7 +141,6 @@ async function selectDropdown(page, labelName, valueToSelect) {
     }
   } catch (e) {
     log(`    ⚠ Isu dropdown ${labelName}: ${e.message.substring(0, 50)}...`, 'yellow');
-    // Final safety fallback
     await page.keyboard.type(valueToSelect).catch(() => {});
     await page.keyboard.press('Enter').catch(() => {});
   }
@@ -155,12 +154,10 @@ async function fillInput(page, labelName, value) {
   let input;
 
   if (await label.count() > 0) {
-    // Find input or textarea directly after the label
     input = label.locator('xpath=following::input[1] | following::textarea[1]').first();
   }
   
   if (!input || await input.count() === 0) {
-    // Fallback to placeholder matching
     input = page.getByPlaceholder(new RegExp(labelName, 'i')).first();
   }
 
@@ -297,7 +294,7 @@ async function processBook(page, book, index, total) {
 
 async function main() {
   log('══════════════════', 'bright');
-  log('  AINS NILAM Bot (Anti-Hang + Verbose)', 'bright');
+  log('  AINS NILAM Bot (Readable Timestamps)', 'bright');
   log('══════════════════', 'bright');
 
   ensureDir(CONFIG.SCREENSHOT_DIR);
