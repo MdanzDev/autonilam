@@ -12,12 +12,12 @@ const CONFIG = {
   SCREENSHOT_DIR: "./screenshots",
   PROFILE_DIR: "./chrome-profile",
   TIMEOUT: 30000,
-  LONG_TIMEOUT: 600000, // Increased to 10 mins in case you need time to log in
+  LONG_TIMEOUT: 600000, 
   MAX_BOOKS_PER_SESSION: 30,
   
-  // 3 MINUTE COOLDOWN (185,000 ms = 3 mins 5 secs)
-  MIN_BOOK_GAP: 185000, 
-  MAX_BOOK_GAP: 205000  
+  // Small gap between books. The 3-minute wait is handled dynamically inside the form loop.
+  MIN_BOOK_GAP: 5000, 
+  MAX_BOOK_GAP: 10000  
 };
 
 const COLORS = {
@@ -80,21 +80,16 @@ async function checkForBan(page) {
 
 async function selectCustomDropdown(page, index, valueToSelect) {
   await sleep(rand(500, 1000));
-  
   const nativeSelects = page.locator('select');
   if (await nativeSelects.count() > index) {
     const select = nativeSelects.nth(index);
     if (await select.isVisible()) {
-      try {
-        await select.selectOption({ label: valueToSelect });
-        return;
-      } catch (e) {}
+      try { await select.selectOption({ label: valueToSelect }); return; } catch (e) {}
     }
   }
   
   const dropdowns = page.locator('div[role="combobox"], button, .css-1dimb5e-control, [class*="control"]');
-  const target = dropdowns.nth(index);
-  await target.click({ force: true });
+  await dropdowns.nth(index).click({ force: true });
   await sleep(rand(800, 1200));
   await page.getByText(valueToSelect, { exact: true }).last().click();
   await sleep(rand(400, 600));
@@ -187,15 +182,34 @@ async function processBook(page, book, index, total) {
   const start = Date.now();
   log(`[${index}/${total}] Processing: ${book.title}`, 'cyan');
   
-  await page.goto(CONFIG.RECORD_URL, { waitUntil: 'domcontentloaded', timeout: 20000 });
-  await sleep(2500); 
+  let formLoaded = false;
+  let cooldownAttempts = 0;
 
-  if (await checkForBan(page)) throw new Error('BANNED');
-  
-  if (!await waitForText(page, ['Kategori dan Jenis'], 10000)) {
-    await takeScreenshot(page, 'no_form');
-    throw new Error('Cannot load form');
+  // Loop to handle AINS 3-minute cooldown screen dynamically
+  while (!formLoaded && cooldownAttempts < 5) {
+    await page.goto(CONFIG.RECORD_URL, { waitUntil: 'domcontentloaded', timeout: 20000 });
+    await sleep(2500); 
+
+    if (await checkForBan(page)) throw new Error('BANNED');
+    
+    // 1. Check if the form is ready
+    if (await waitForText(page, ['Kategori dan Jenis'], 5000)) {
+      formLoaded = true;
+    } 
+    // 2. Check if the AINS 3-minute Makluman/Cooldown screen is showing
+    else if (await waitForText(page, ['hanya boleh ditambah semula', 'Sila cuba lagi', 'Makluman'], 2000)) {
+      cooldownAttempts++;
+      log(`⏳ AINS Cooldown Detected (Try ${cooldownAttempts}). Waiting 3 mins 5 secs...`, 'yellow');
+      await sleep(185000); // Wait 3 minutes + 5 seconds buffer
+    } 
+    // 3. Unknown state (maybe page failed to load)
+    else {
+      await takeScreenshot(page, 'no_form');
+      throw new Error('Cannot load form (unknown page state)');
+    }
   }
+
+  if (!formLoaded) throw new Error('Max cooldown retries reached');
 
   await fillStep1(page, book);
   await fillStep2(page, book);
@@ -207,7 +221,7 @@ async function processBook(page, book, index, total) {
 
 async function main() {
   log('══════════════════', 'bright');
-  log('  AINS NILAM Bot (Dashboard + 3m Cooldown)', 'bright');
+  log('  AINS NILAM Bot (Cooldown Handler)', 'bright');
   log('══════════════════', 'bright');
 
   ensureDir(CONFIG.SCREENSHOT_DIR);
@@ -216,23 +230,17 @@ async function main() {
 
   try {
     if (!fs.existsSync(path.resolve(CONFIG.BOOK_FILE))) {
-      throw new Error("books.json not found! Please create it in this folder.");
+      throw new Error("books.json not found!");
     }
 
     log('Launching Chrome...', 'yellow');
-    
     try {
       context = await chromium.launchPersistentContext(path.resolve(CONFIG.PROFILE_DIR), {
-        channel: 'chrome',
-        headless: false,
-        viewport: null,
-        args: ['--start-maximized']
+        channel: 'chrome', headless: false, viewport: null, args: ['--start-maximized']
       });
     } catch (e) {
       context = await chromium.launchPersistentContext(path.resolve(CONFIG.PROFILE_DIR), {
-        headless: false,
-        viewport: null,
-        args: ['--start-maximized']
+        headless: false, viewport: null, args: ['--start-maximized']
       });
     }
 
@@ -240,19 +248,15 @@ async function main() {
     page = pages.length > 0 ? pages[0] : await context.newPage();
     page.setDefaultTimeout(CONFIG.TIMEOUT);
 
-    // GO DIRECTLY TO DASHBOARD
     log('Navigating to AINS Dashboard...', 'yellow');
     await page.goto(CONFIG.DASHBOARD_URL, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
     await sleep(4000);
 
     const text = await page.locator('body').innerText().catch(() => '');
     
-    // Check if we got redirected to Google Login or the AINS login page
+    // If not logged in, wait for manual Google Login
     if (text.includes('Google') || page.url().includes('accounts.google.com') || page.url().includes('login')) {
       log('⚠ Sila klik "Login with Google" dan log masuk di tetingkap Chrome...', 'yellow');
-      log('Bot akan teruskan secara automatik selepas anda berjaya masuk ke Dashboard.', 'yellow');
-      
-      // Wait until the dashboard URL is reached or the text "Papan Pemuka" appears
       await page.waitForFunction(
         () => window.location.href.includes('/web/dashboard') || document.body.innerText.includes('Papan Pemuka'), 
         { timeout: CONFIG.LONG_TIMEOUT }
@@ -281,10 +285,9 @@ async function main() {
         await processBook(page, book, books.indexOf(book) + 1, books.length);
         saveProgress(book, 'success'); success++;
         
-        // Apply cooldown if there are more books left
         if (i < batch.length - 1) { 
             const g = rand(CONFIG.MIN_BOOK_GAP, CONFIG.MAX_BOOK_GAP); 
-            log(`⏳ Cooldown (3 minit): Menunggu ${Math.round(g/1000)}s sebelum buku seterusnya...`, 'magenta'); 
+            log(`  Jeda pendek: ${Math.round(g/1000)}s`, 'dim'); 
             await sleep(g); 
         }
       } catch (e) {
