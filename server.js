@@ -3,19 +3,21 @@ const fs = require('fs');
 const path = require('path');
 
 const CONFIG = {
-  BASE_URL: "https://ains.moe.gov.my",
+  DASHBOARD_URL: "https://ains.moe.gov.my/web/dashboard",
   RECORD_URL: "https://ains.moe.gov.my/web/new-record-book",
   BOOK_FILE: "./books.json",
   SUCCESS_FILE: "./success.json",
   FAILED_FILE: "./failed.json",
   LOG_FILE: "./automation.log",
   SCREENSHOT_DIR: "./screenshots",
-  PROFILE_DIR: "./chrome-profile", // Local folder, safe from Windows locks
+  PROFILE_DIR: "./chrome-profile",
   TIMEOUT: 30000,
-  LONG_TIMEOUT: 300000,
+  LONG_TIMEOUT: 600000, // Increased to 10 mins in case you need time to log in
   MAX_BOOKS_PER_SESSION: 30,
-  MIN_BOOK_GAP: 3000,
-  MAX_BOOK_GAP: 7000
+  
+  // 3 MINUTE COOLDOWN (185,000 ms = 3 mins 5 secs)
+  MIN_BOOK_GAP: 185000, 
+  MAX_BOOK_GAP: 205000  
 };
 
 const COLORS = {
@@ -205,7 +207,7 @@ async function processBook(page, book, index, total) {
 
 async function main() {
   log('══════════════════', 'bright');
-  log('  AINS NILAM Bot (Standalone)', 'bright');
+  log('  AINS NILAM Bot (Dashboard + 3m Cooldown)', 'bright');
   log('══════════════════', 'bright');
 
   ensureDir(CONFIG.SCREENSHOT_DIR);
@@ -238,15 +240,28 @@ async function main() {
     page = pages.length > 0 ? pages[0] : await context.newPage();
     page.setDefaultTimeout(CONFIG.TIMEOUT);
 
-    await page.goto(CONFIG.BASE_URL, { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {});
-    await sleep(3000);
+    // GO DIRECTLY TO DASHBOARD
+    log('Navigating to AINS Dashboard...', 'yellow');
+    await page.goto(CONFIG.DASHBOARD_URL, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
+    await sleep(4000);
 
     const text = await page.locator('body').innerText().catch(() => '');
-    if (text.includes('DELIMa') && !text.includes('AINS')) {
-      log('Sila login di tetingkap Chrome yang terbuka...', 'yellow');
-      await page.waitForFunction(() => document.body.innerText.includes('AINS') || document.body.innerText.includes('Papan Pemuka'), { timeout: CONFIG.LONG_TIMEOUT });
-      log('Login berjaya!', 'green');
-    } else { log('Sudah login.', 'green'); }
+    
+    // Check if we got redirected to Google Login or the AINS login page
+    if (text.includes('Google') || page.url().includes('accounts.google.com') || page.url().includes('login')) {
+      log('⚠ Sila klik "Login with Google" dan log masuk di tetingkap Chrome...', 'yellow');
+      log('Bot akan teruskan secara automatik selepas anda berjaya masuk ke Dashboard.', 'yellow');
+      
+      // Wait until the dashboard URL is reached or the text "Papan Pemuka" appears
+      await page.waitForFunction(
+        () => window.location.href.includes('/web/dashboard') || document.body.innerText.includes('Papan Pemuka'), 
+        { timeout: CONFIG.LONG_TIMEOUT }
+      );
+      log('Login berjaya! Dashboard dimuatkan.', 'green');
+      await sleep(3000);
+    } else { 
+      log('Sudah login dan berada di Dashboard.', 'green'); 
+    }
 
     if (await checkForBan(page)) return;
 
@@ -265,9 +280,11 @@ async function main() {
       try {
         await processBook(page, book, books.indexOf(book) + 1, books.length);
         saveProgress(book, 'success'); success++;
+        
+        // Apply cooldown if there are more books left
         if (i < batch.length - 1) { 
             const g = rand(CONFIG.MIN_BOOK_GAP, CONFIG.MAX_BOOK_GAP); 
-            log(`  Rehat: ${Math.round(g/1000)}s`, 'dim'); 
+            log(`⏳ Cooldown (3 minit): Menunggu ${Math.round(g/1000)}s sebelum buku seterusnya...`, 'magenta'); 
             await sleep(g); 
         }
       } catch (e) {
@@ -275,8 +292,8 @@ async function main() {
         log(`  ✗ Ralat: ${e.message}`, 'red');
         await takeScreenshot(page, `err_${books.indexOf(book)}`);
         saveProgress(book, 'failed', e.message); failed++;
-        await page.goto(CONFIG.BASE_URL, { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {});
-        await sleep(3000);
+        await page.goto(CONFIG.DASHBOARD_URL, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
+        await sleep(5000);
       }
     }
   } catch (e) {
