@@ -239,6 +239,15 @@ async function processBook(page, book, index, total) {
 
 // ───────────────────────── Chrome connection ─────────────────────────
 
+// Never let a single CDP call sit silently forever
+function withTimeout(promise, ms, label = 'operation') {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms / 1000}s`)), ms); })
+  ]).finally(() => clearTimeout(timer));
+}
+
 const LAUNCH_HINT = 'start chrome --remote-debugging-port=9222 --user-data-dir="C:\\chrome-debug-profile"';
 
 // Plain HTTP call to Chrome's DevTools endpoint (127.0.0.1 avoids the Node 17+ "localhost -> ::1" problem)
@@ -298,13 +307,20 @@ async function getWorkingPage(browser) {
   for (let i = 0; i < 20; i++) {
     const p = pickPage(browser);
     if (p) return p;
+    if (i % 4 === 0) {
+      log(`  Waiting for Playwright to attach to a tab... (sees ${allPages(browser).length} tab(s) in ${browser.contexts().length} context(s))`, 'dim');
+    }
     await sleep(500);
+  }
+
+  if (tabs.length > 0) {
+    log(`Chrome lists ${tabs.length} tab(s) but Playwright cannot attach to any of them. This is usually an old Playwright version: run  npm i playwright@latest`, 'yellow');
   }
 
   // 2) Ask Playwright to open a tab (and show the real error if it can't)
   log('No tabs visible to Playwright. Trying to open one...', 'yellow');
   for (const ctx of browser.contexts()) {
-    try { return await ctx.newPage(); }
+    try { return await withTimeout(ctx.newPage(), 10000, 'context.newPage()'); }
     catch (err) { log(`  context.newPage() failed: ${err.message}`, 'yellow'); }
   }
 
@@ -331,6 +347,7 @@ async function main() {
   log('══════════════════', 'bright');
   log('  AINS NILAM Bot (Fixed)', 'bright');
   log('══════════════════', 'bright');
+  try { log(`Playwright ${require('playwright/package.json').version}`, 'dim'); } catch {}
 
   ensureDir(CONFIG.SCREENSHOT_DIR);
   let browser, page, success = 0, failed = 0;
@@ -341,9 +358,12 @@ async function main() {
       throw new Error("books.json not found! Please create it in this folder.");
     }
 
-    browser = await chromium.connectOverCDP(await connectToChrome());
+    log('Connecting to Chrome...', 'dim');
+    browser = await chromium.connectOverCDP(await connectToChrome(), { timeout: 15000 });
+    log('Connected. Looking for a tab...', 'dim');
     page = await getWorkingPage(browser);
-    await page.bringToFront().catch(() => {});
+    log(`Using tab: ${page.url() || 'about:blank'}`, 'dim');
+    await withTimeout(page.bringToFront(), 5000, 'bringToFront').catch(() => {});
     page.setDefaultTimeout(CONFIG.TIMEOUT);
 
     await page.goto(CONFIG.BASE_URL, { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {});
@@ -395,6 +415,7 @@ async function main() {
     } else if (e.code === 'NO_PAGE') {
       log(e.message, 'red');
       log('Close ALL Chrome windows (check Task Manager for leftover chrome.exe), relaunch with the command above, then run again.', 'yellow');
+      log('If Chrome lists tabs but Playwright cannot attach to them, update Playwright:  npm i playwright@latest', 'yellow');
     } else {
       log(`Error: ${e.message}`, 'red');
     }
