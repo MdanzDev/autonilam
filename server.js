@@ -84,18 +84,14 @@ async function checkForBan(page) {
   return false;
 }
 
-// NEW: Active Refresh Cooldown Handler
 async function handleCooldown(page) {
   log(`⏳ Cooldown detected. Memulakan refresh automatik setiap 20 saat (Maksimum 5 minit)...`, 'yellow');
   let elapsed = 0;
   
-  while (elapsed < 300) { // Wait up to 5 minutes
-    await sleep(20000); // Wait 20 seconds
+  while (elapsed < 300) { 
+    await sleep(20000); 
     elapsed += 20;
-    
     log(`⏳ [Cooldown] Memuat semula halaman... (${elapsed}s berlalu)`, 'yellow');
-    
-    // Force a hard reload of the SPA
     await page.goto(CONFIG.RECORD_URL, { waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {});
     await sleep(2500);
 
@@ -107,61 +103,82 @@ async function handleCooldown(page) {
   return false;
 }
 
+// REBUILT: Ignores hidden elements, matches case-insensitive and ignores hyphens
 async function selectDropdown(page, labelName, valueToSelect) {
   log(`    ↳ Memilih ${labelName}: "${valueToSelect}"...`, 'dim');
   await sleep(rand(400, 800));
 
   const label = page.locator('label').filter({ hasText: new RegExp(labelName, 'i') }).first();
   let combobox;
+
+  // Find the specific combobox/select that is VISIBLE
   if (await label.count() > 0) {
-    combobox = label.locator('xpath=following::div[@role="combobox"][1] | following::select[1]').first();
+    combobox = label.locator('xpath=following::select[1] | following::div[@role="combobox"][1]').first();
   }
   
-  if (!combobox || await combobox.count() === 0) {
+  if (!combobox || await combobox.count() === 0 || !await combobox.isVisible()) {
     const index = labelName === 'Kategori' ? 0 : (labelName === 'Jenis Bahan' ? 1 : 2);
-    combobox = page.locator('div[role="combobox"], select').nth(index);
+    combobox = page.locator('select:visible, div[role="combobox"]:visible').nth(index);
   }
 
   try {
     const isNative = await combobox.evaluate(el => el.tagName.toLowerCase() === 'select').catch(() => false);
     if (isNative) {
-      await combobox.selectOption({ label: valueToSelect }, { timeout: 3000 });
+      // Use Regex to match "E-Buku" even if the UI uses "E Buku" or "E-buku"
+      await combobox.selectOption({ label: new RegExp(valueToSelect.replace('-', '.?'), 'i') }, { timeout: 5000 });
       log(`    ✓ (Native) Berjaya pilih "${valueToSelect}"`, 'dim');
       return;
     }
+    
     await combobox.click({ timeout: 5000, force: true });
-    await sleep(800); 
-    const option = page.getByRole('option', { name: valueToSelect, exact: true }).last();
+    await sleep(1000); 
+    
+    // React Dropdown Option click
+    const option = page.getByRole('option', { name: new RegExp(valueToSelect.replace('-', '.?'), 'i') }).last();
     if (await option.isVisible({ timeout: 2000 }).catch(() => false)) {
       await option.click({ timeout: 2000 });
       log(`    ✓ Berjaya pilih "${valueToSelect}"`, 'dim');
     } else {
-      log(`    ⚠ Gagal cari pilihan, cuba taip & Enter...`, 'yellow');
       await page.keyboard.type(valueToSelect);
       await sleep(500);
       await page.keyboard.press('Enter');
     }
   } catch (e) {
     log(`    ⚠ Isu dropdown ${labelName}: ${e.message.substring(0, 50)}...`, 'yellow');
-    await page.keyboard.type(valueToSelect).catch(() => {});
     await page.keyboard.press('Enter').catch(() => {});
   }
   await sleep(rand(300, 500));
 }
 
+// REBUILT: Loops through VISIBLE inputs only, avoiding the hidden CSRF token
 async function fillInput(page, labelName, value) {
   log(`    ↳ Isi ${labelName}: "${String(value).substring(0, 20)}..."`, 'dim');
-  const label = page.locator('label').filter({ hasText: new RegExp(labelName, 'i') }).first();
-  let input;
-
-  if (await label.count() > 0) {
-    input = label.locator('xpath=following::input[1] | following::textarea[1]').first();
+  await sleep(rand(200, 400));
+  
+  const inputs = page.locator('input[type="text"]:visible, input[type="number"]:visible, textarea:visible');
+  const count = await inputs.count();
+  let filled = false;
+  
+  for (let i = 0; i < count; i++) {
+    const input = inputs.nth(i);
+    // Gather all meta attributes of this visible input
+    const meta = await input.evaluate(e => {
+      const l = e.id ? document.querySelector(`label[for="${e.id}"]`) : null;
+      const parentText = e.parentElement ? e.parentElement.innerText : '';
+      return [e.placeholder, e.getAttribute('aria-label'), e.name, e.id, l ? l.innerText : '', parentText].join(' ').toLowerCase();
+    }).catch(() => '');
+    
+    // Check if the target label is within the meta attributes
+    if (meta.includes(labelName.toLowerCase()) || (labelName === 'Tajuk' && meta.includes('title'))) {
+      await input.fill(String(value), { timeout: 3000 }).catch(() => {});
+      filled = true;
+      break;
+    }
   }
-  if (!input || await input.count() === 0) {
-    input = page.getByPlaceholder(new RegExp(labelName, 'i')).first();
-  }
-  if (input && await input.count() > 0) {
-    await input.fill(String(value), { timeout: 5000 }).catch(() => {
+  
+  // Fallback: use standard attributes if loop failed
+  if (!filled) {
+    await page.locator(`input[name*="${labelName}" i]:visible, input[placeholder*="${labelName}" i]:visible`).first().fill(String(value), { timeout: 3000 }).catch(() => {
       log(`    ⚠ Gagal isi ${labelName}`, 'yellow');
     });
   }
@@ -170,7 +187,7 @@ async function fillInput(page, labelName, value) {
 
 async function clickNext(page) {
   log(`    ↳ Klik "Seterusnya"`, 'dim');
-  await page.locator('button:has-text("Seterusnya")').first().click({ timeout: 5000 }).catch(() => {});
+  await page.locator('button:has-text("Seterusnya"):visible').first().click({ timeout: 5000 }).catch(() => {});
   await sleep(rand(1000, 1500)); 
 }
 
@@ -208,22 +225,22 @@ async function fillStep3(page, book) {
   const rating = book.rating || 5;
   
   log(`    ↳ Klik Rating Bintang: ${rating}`, 'dim');
-  const stars = page.locator('svg[class*="star"], svg[class*="rating"], i[class*="star"], button[class*="star"]');
+  const stars = page.locator('svg[class*="star"]:visible, svg[class*="rating"]:visible, i[class*="star"]:visible, button[class*="star"]:visible');
   if (await stars.count() >= rating) {
     await stars.nth(rating - 1).click({ force: true, timeout: 3000 }).catch(() => {});
   } else {
-    const starContainers = page.locator('div').filter({ has: page.locator('svg') }).filter({ hasText: /^\s*$/ }); 
+    const starContainers = page.locator('div:visible').filter({ has: page.locator('svg') }).filter({ hasText: /^\s*$/ }); 
     await starContainers.nth(rating - 1).click({ force: true, timeout: 3000 }).catch(() => {});
   }
   await sleep(rand(500, 1000));
 
   log(`    ↳ Isi Rumusan...`, 'dim');
-  const summaryBox = page.locator('textarea').first();
+  const summaryBox = page.locator('textarea:visible').first();
   await summaryBox.fill(padText(book.summary, 110), { timeout: 5000 }).catch(() => {});
   await sleep(rand(500, 800));
   
   log(`    ↳ Isi Pengajaran...`, 'dim');
-  const lessonBox = page.locator('textarea').nth(1);
+  const lessonBox = page.locator('textarea:visible').nth(1);
   await lessonBox.fill(padText(book.lesson, 110), { timeout: 5000 }).catch(() => {});
   await sleep(rand(500, 800));
 
@@ -235,7 +252,7 @@ async function fillStep4AndSubmit(page) {
   log('  Step 4/4: Semakan & Hantar', 'cyan');
   
   log('    ↳ Menanda checkbox pengesahan...', 'dim');
-  const checkbox = page.locator('input[type="checkbox"]').first();
+  const checkbox = page.locator('input[type="checkbox"]:visible').first();
   if (await checkbox.isVisible()) {
     await checkbox.check({ force: true, timeout: 3000 }).catch(() => {});
   } else {
@@ -244,7 +261,10 @@ async function fillStep4AndSubmit(page) {
   await sleep(rand(500, 1000));
 
   log('    ↳ Klik "Hantar Rekod"...', 'dim');
-  await page.locator('button:has-text("Hantar Rekod")').first().click({ timeout: 5000 });
+  // THE FIX: Find the VISIBLE button, ignoring the hidden #wizSubmit
+  const submitBtn = page.locator('button:has-text("Hantar Rekod"):visible, button:has-text("Hantar"):visible').first();
+  await submitBtn.click({ timeout: 5000 });
+  
   await sleep(rand(2000, 3000));
   
   if (await waitForText(page, ['terima kasih', 'telah dihantar', 'tahniah', 'berjaya'], 10000) || page.url().includes('/web/dashboard')) {
@@ -292,7 +312,7 @@ async function processBook(page, book, index, total) {
 
 async function main() {
   log('══════════════════', 'bright');
-  log('  AINS NILAM Bot (Active Refresh)', 'bright');
+  log('  AINS NILAM Bot (Bulletproof + Overnight)', 'bright');
   log('══════════════════', 'bright');
 
   ensureDir(CONFIG.SCREENSHOT_DIR);
