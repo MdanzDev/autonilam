@@ -103,7 +103,6 @@ async function handleCooldown(page) {
   return false;
 }
 
-// REBUILT: Ignores hidden elements, matches case-insensitive and ignores hyphens
 async function selectDropdown(page, labelName, valueToSelect) {
   log(`    ↳ Memilih ${labelName}: "${valueToSelect}"...`, 'dim');
   await sleep(rand(400, 800));
@@ -111,7 +110,6 @@ async function selectDropdown(page, labelName, valueToSelect) {
   const label = page.locator('label').filter({ hasText: new RegExp(labelName, 'i') }).first();
   let combobox;
 
-  // Find the specific combobox/select that is VISIBLE
   if (await label.count() > 0) {
     combobox = label.locator('xpath=following::select[1] | following::div[@role="combobox"][1]').first();
   }
@@ -124,16 +122,22 @@ async function selectDropdown(page, labelName, valueToSelect) {
   try {
     const isNative = await combobox.evaluate(el => el.tagName.toLowerCase() === 'select').catch(() => false);
     if (isNative) {
-      // Use Regex to match "E-Buku" even if the UI uses "E Buku" or "E-buku"
-      await combobox.selectOption({ label: new RegExp(valueToSelect.replace('-', '.?'), 'i') }, { timeout: 5000 });
-      log(`    ✓ (Native) Berjaya pilih "${valueToSelect}"`, 'dim');
+      // FIXED: Manually find option text, then select by exact string
+      const options = await combobox.evaluate(el => Array.from(el.options).map(o => ({ value: o.value, text: o.text.trim() })));
+      const match = options.find(o => o.text.toLowerCase().replace(/\s+/g, '').includes(valueToSelect.toLowerCase().replace(/\s+/g, '').replace('-', '')));
+      
+      if (match) {
+        await combobox.selectOption(match.value, { timeout: 3000 });
+        log(`    ✓ (Native) Berjaya pilih "${match.text}"`, 'dim');
+      } else {
+        log(`    ⚠ Pilihan "${valueToSelect}" tidak dijumpai`, 'yellow');
+      }
       return;
     }
     
     await combobox.click({ timeout: 5000, force: true });
     await sleep(1000); 
     
-    // React Dropdown Option click
     const option = page.getByRole('option', { name: new RegExp(valueToSelect.replace('-', '.?'), 'i') }).last();
     if (await option.isVisible({ timeout: 2000 }).catch(() => false)) {
       await option.click({ timeout: 2000 });
@@ -145,42 +149,28 @@ async function selectDropdown(page, labelName, valueToSelect) {
     }
   } catch (e) {
     log(`    ⚠ Isu dropdown ${labelName}: ${e.message.substring(0, 50)}...`, 'yellow');
-    await page.keyboard.press('Enter').catch(() => {});
   }
   await sleep(rand(300, 500));
 }
 
-// REBUILT: Loops through VISIBLE inputs only, avoiding the hidden CSRF token
+// REBUILT: Uses Playwright's native getByLabel which is lightning fast
 async function fillInput(page, labelName, value) {
   log(`    ↳ Isi ${labelName}: "${String(value).substring(0, 20)}..."`, 'dim');
   await sleep(rand(200, 400));
   
-  const inputs = page.locator('input[type="text"]:visible, input[type="number"]:visible, textarea:visible');
-  const count = await inputs.count();
-  let filled = false;
-  
-  for (let i = 0; i < count; i++) {
-    const input = inputs.nth(i);
-    // Gather all meta attributes of this visible input
-    const meta = await input.evaluate(e => {
-      const l = e.id ? document.querySelector(`label[for="${e.id}"]`) : null;
-      const parentText = e.parentElement ? e.parentElement.innerText : '';
-      return [e.placeholder, e.getAttribute('aria-label'), e.name, e.id, l ? l.innerText : '', parentText].join(' ').toLowerCase();
-    }).catch(() => '');
-    
-    // Check if the target label is within the meta attributes
-    if (meta.includes(labelName.toLowerCase()) || (labelName === 'Tajuk' && meta.includes('title'))) {
-      await input.fill(String(value), { timeout: 3000 }).catch(() => {});
-      filled = true;
-      break;
+  try {
+    const loc = page.getByLabel(new RegExp(labelName, 'i')).first();
+    if (await loc.isVisible({ timeout: 2000 })) {
+      await loc.fill(String(value), { timeout: 3000 });
+      return;
     }
-  }
-  
-  // Fallback: use standard attributes if loop failed
-  if (!filled) {
-    await page.locator(`input[name*="${labelName}" i]:visible, input[placeholder*="${labelName}" i]:visible`).first().fill(String(value), { timeout: 3000 }).catch(() => {
-      log(`    ⚠ Gagal isi ${labelName}`, 'yellow');
-    });
+  } catch (e) {}
+
+  // Fallback to placeholder/name just in case
+  try {
+    await page.locator(`input[name*="${labelName}" i]:visible, input[placeholder*="${labelName}" i]:visible`).first().fill(String(value), { timeout: 3000 });
+  } catch (e) {
+    log(`    ⚠ Gagal isi ${labelName}`, 'yellow');
   }
   await sleep(rand(200, 400));
 }
@@ -261,7 +251,6 @@ async function fillStep4AndSubmit(page) {
   await sleep(rand(500, 1000));
 
   log('    ↳ Klik "Hantar Rekod"...', 'dim');
-  // THE FIX: Find the VISIBLE button, ignoring the hidden #wizSubmit
   const submitBtn = page.locator('button:has-text("Hantar Rekod"):visible, button:has-text("Hantar"):visible').first();
   await submitBtn.click({ timeout: 5000 });
   
@@ -312,7 +301,7 @@ async function processBook(page, book, index, total) {
 
 async function main() {
   log('══════════════════', 'bright');
-  log('  AINS NILAM Bot (Bulletproof + Overnight)', 'bright');
+  log('  AINS NILAM Bot (Fixed Dropdowns & Inputs)', 'bright');
   log('══════════════════', 'bright');
 
   ensureDir(CONFIG.SCREENSHOT_DIR);
