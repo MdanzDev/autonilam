@@ -80,31 +80,7 @@ async function checkForBan(page) {
 async function clickNext(page) {
   // The new UI uses "Seterusnya →"
   await page.locator('button:has-text("Seterusnya"), button:has-text("Seterusnya →")').first().click({ timeout: 5000 }).catch(() => {});
-  await sleep(rand(800, 1500)); // Wait for React animation
-}
-
-// Custom select for the new React UI dropdowns
-async function selectDropdownByLabel(page, labelRegex, value) {
-  await sleep(rand(400, 800));
-  // Find the container that holds the label
-  const labelEl = page.locator('label, span').filter({ hasText: labelRegex }).first();
-  if (await labelEl.isVisible()) {
-    // Depending on the DOM structure, find the select or react-select next to it
-    const select = page.locator('select').filter({ has: page.locator(`option:has-text("${value}")`) }).first();
-    if (await select.count() > 0) {
-      await select.selectOption({ label: value }).catch(() => {}); // Try by label
-      return;
-    }
-  }
-  
-  // Fallback: Just click the dropdown and find the option
-  const selectBox = page.locator('select').nth(await page.locator('select').count() - 1); 
-  try {
-    await page.locator('select').filter({ hasText: value }).first().click();
-  } catch {
-    // If it's a standard HTML select
-    await page.selectOption('select', { label: value }).catch(() => {});
-  }
+  await sleep(rand(1000, 1500)); // Wait for React animation and next step to render
 }
 
 // Pads text to ensure it is strictly > 100 characters
@@ -120,29 +96,36 @@ function padText(text, minLength = 110) {
 async function fillStep1(page, book) {
   log('  Step 1/4: Kategori dan Jenis', 'dim');
   
-  // Kategori (Dropdown)
+  // Helper to handle both native HTML selects and custom React dropdowns
+  const selectDropdown = async (index, valueToSelect) => {
+    const select = page.locator('select').nth(index);
+    // Try native select first
+    if (await select.count() > 0 && await select.isVisible()) {
+      try {
+        await select.selectOption({ label: valueToSelect });
+        return;
+      } catch (e) {
+        // Fallthrough to custom dropdown if option doesn't exist natively
+      }
+    }
+    // Custom React Dropdown fallback
+    const dropdownBtn = page.locator('.css-19bb58m, div[role="combobox"], button').filter({ hasText: /Sila pilih|Pilih/ }).first();
+    await dropdownBtn.click();
+    await sleep(500);
+    await page.getByText(valueToSelect, { exact: true }).last().click();
+  };
+
+  // 1. Kategori
   const kategori = book.category || 'Fiksyen';
-  await page.locator('select').nth(0).selectOption({ label: kategori }).catch(async () => {
-    await page.locator('button, div[role="combobox"]').filter({ hasText: 'Sila pilih' }).first().click();
-    await sleep(500);
-    await page.getByText(kategori, { exact: true }).last().click();
-  });
+  await selectDropdown(0, kategori);
 
-  // Jenis Bahan (Dropdown)
+  // 2. Jenis Bahan (Fizikal / E-Buku)
   const jenis = book.type?.toLowerCase() === 'physical' ? 'Fizikal' : 'E-Buku';
-  await page.locator('select').nth(1).selectOption({ label: jenis }).catch(async () => {
-    await page.locator('button, div[role="combobox"]').filter({ hasText: 'Sila pilih' }).first().click();
-    await sleep(500);
-    await page.getByText(jenis, { exact: true }).last().click();
-  });
+  await selectDropdown(1, jenis);
 
-  // Bahasa (Dropdown)
-  const bahasa = book.language || 'Bahasa Melayu';
-  await page.locator('select').nth(2).selectOption({ label: bahasa }).catch(async () => {
-    await page.locator('button, div[role="combobox"]').filter({ hasText: '- Sila pilih -' }).first().click();
-    await sleep(500);
-    await page.getByText(bahasa, { exact: true }).last().click();
-  });
+  // 3. Bahasa
+  const bahasa = book.language || 'English';
+  await selectDropdown(2, bahasa);
 
   await clickNext(page);
   await waitForText(page, ['Maklumat Bacaan']);
@@ -153,28 +136,23 @@ async function fillStep2(page, book) {
   
   const inputs = page.locator('input[type="text"], input[type="number"]');
   
-  // Tajuk *
-  await inputs.nth(0).fill(book.title);
+  // Fill fields sequentially based on the screenshot layout
+  await inputs.nth(0).fill(book.title); // Tajuk *
   await sleep(rand(200, 400));
   
-  // Tahun Terbitan *
-  await inputs.nth(1).fill(String(book.year || 2023));
+  await inputs.nth(1).fill(String(book.year || 2023)); // Tahun Terbitan *
   await sleep(rand(200, 400));
 
-  // Penulis *
-  await inputs.nth(2).fill(book.author || 'Penulis Tidak Diketahui');
+  await inputs.nth(2).fill(book.author || 'Penulis Tidak Diketahui'); // Penulis *
   await sleep(rand(200, 400));
 
-  // ISBN (Optional)
-  if (book.isbn) await inputs.nth(3).fill(book.isbn).catch(() => {});
+  if (book.isbn) await inputs.nth(3).fill(book.isbn).catch(() => {}); // ISBN
   await sleep(rand(200, 400));
 
-  // Bilangan Mukasurat *
-  await inputs.nth(4).fill(String(book.pages || 100));
+  await inputs.nth(4).fill(String(book.pages || 100)); // Bilangan Mukasurat *
   await sleep(rand(200, 400));
 
-  // Penerbit *
-  await inputs.nth(5).fill(book.publisher || 'Penerbit Umum');
+  await inputs.nth(5).fill(book.publisher || 'Penerbit Umum'); // Penerbit *
   
   // Kulit Buku / Imej - Skipped (Optional)
 
@@ -185,13 +163,14 @@ async function fillStep2(page, book) {
 async function fillStep3(page, book) {
   log('  Step 3/4: Penilaian dan Rumusan', 'dim');
   
-  // Click 5th star (Rating)
-  const stars = page.locator('svg[class*="star"], svg[class*="rating"], i[class*="star"], button[class*="star"]');
+  // 1. Click Rating Star
   const rating = book.rating || 5;
+  // The stars are usually in a container. We find the 5th star icon.
+  const stars = page.locator('svg[class*="star"], svg[class*="rating"], i[class*="star"], button[class*="star"]');
   if (await stars.count() >= rating) {
     await stars.nth(rating - 1).click({ force: true }).catch(() => {});
   } else {
-    // If SVG isn't clickable directly, click the parent container
+    // Fallback for generic SVG layout
     const starContainers = page.locator('div').filter({ has: page.locator('svg') }).filter({ hasText: /^\s*$/ }); 
     await starContainers.nth(rating - 1).click({ force: true }).catch(() => {});
   }
@@ -199,12 +178,12 @@ async function fillStep3(page, book) {
 
   const textareas = page.locator('textarea');
   
-  // Rumusan * (Must be > 100 chars)
+  // 2. Rumusan * (Must be > 100 chars)
   const safeSummary = padText(book.summary, 110);
   await textareas.nth(0).fill(safeSummary);
   await sleep(rand(500, 800));
 
-  // Pengajaran * (Must be > 100 chars)
+  // 3. Pengajaran * (Must be > 100 chars)
   const safeLesson = padText(book.lesson, 110);
   await textareas.nth(1).fill(safeLesson);
   await sleep(rand(500, 800));
@@ -280,7 +259,7 @@ async function connectToChrome() {
 
 async function main() {
   log('══════════════════', 'bright');
-  log('  AINS NILAM Bot (v2 Fix)', 'bright');
+  log('  AINS NILAM Bot (v2 Final)', 'bright');
   log('══════════════════', 'bright');
 
   ensureDir(CONFIG.SCREENSHOT_DIR);
