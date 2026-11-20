@@ -14,7 +14,6 @@ const CONFIG = {
   TIMEOUT: 30000,
   LONG_TIMEOUT: 600000, 
   MAX_BOOKS_PER_SESSION: 30,
-  
   MIN_BOOK_GAP: 5000, 
   MAX_BOOK_GAP: 10000  
 };
@@ -35,6 +34,21 @@ function log(message, color = 'reset') {
 
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+// Live Countdown Timer
+async function countdownSleep(totalSeconds, reason = "Cooldown") {
+  let remaining = totalSeconds;
+  while (remaining > 0) {
+    const mins = Math.floor(remaining / 60);
+    const secs = remaining % 60;
+    log(`⏳ [${reason}] Menunggu... ${mins}m ${secs}s berbaki`, 'yellow');
+    
+    const step = remaining > 10 ? 10 : remaining; 
+    await sleep(step * 1000);
+    remaining -= step;
+  }
+  log(`⏳ [${reason}] Selesai menunggu.`, 'green');
+}
 
 function loadJSON(filePath) {
   const resolved = path.resolve(filePath);
@@ -62,7 +76,6 @@ async function takeScreenshot(page, name) {
   try { ensureDir(CONFIG.SCREENSHOT_DIR); await page.screenshot({ path: path.join(CONFIG.SCREENSHOT_DIR, `${name}_${Date.now()}.png`), fullPage: true }); } catch {}
 }
 
-// UPDATED: Case-insensitive text matching so it catches "Terima kasih" AND "terima kasih"
 async function waitForText(page, textArray, timeout = 15000) {
   try {
     await page.waitForFunction((texts) => {
@@ -81,24 +94,86 @@ async function checkForBan(page) {
   return false;
 }
 
-async function selectCustomDropdown(page, index, valueToSelect) {
-  await sleep(rand(500, 1000));
-  const nativeSelects = page.locator('select');
-  if (await nativeSelects.count() > index) {
-    const select = nativeSelects.nth(index);
-    if (await select.isVisible()) {
-      try { await select.selectOption({ label: valueToSelect }); return; } catch (e) {}
-    }
+// ROBUST DROPDOWN HANDLER (No more hanging!)
+async function selectDropdown(page, labelName, valueToSelect) {
+  log(`    ↳ Memilih ${labelName}: "${valueToSelect}"...`, 'dim');
+  await sleep(rand(400, 800));
+
+  // 1. Find the specific label on the page
+  const label = page.locator('label').filter({ hasText: new RegExp(labelName, 'i') }).first();
+  
+  // 2. Try to find the dropdown immediately following that label
+  let combobox;
+  if (await label.count() > 0) {
+    combobox = label.locator('xpath=following::div[@role="combobox"][1] | following::select[1]').first();
   }
   
-  const dropdowns = page.locator('div[role="combobox"], button, .css-1dimb5e-control, [class*="control"]');
-  await dropdowns.nth(index).click({ force: true });
-  await sleep(rand(800, 1200));
-  await page.getByText(valueToSelect, { exact: true }).last().click();
-  await sleep(rand(400, 600));
+  // Fallback if label isn't found or isn't structured normally
+  if (!combobox || await combobox.count() === 0) {
+    const index = labelName === 'Kategori' ? 0 : (labelName === 'Jenis Bahan' ? 1 : 2);
+    combobox = page.locator('div[role="combobox"], select').nth(index);
+  }
+
+  try {
+    // Check if it's a standard HTML <select>
+    const isNative = await combobox.evaluate(el => el.tagName.toLowerCase() === 'select').catch(() => false);
+    if (isNative) {
+      await combobox.selectOption({ label: valueToSelect }, { timeout: 3000 });
+      log(`    ✓ (Native) Berjaya pilih "${valueToSelect}"`, 'dim');
+      return;
+    }
+
+    // Click the React dropdown
+    await combobox.click({ timeout: 5000, force: true });
+    await sleep(800); // Wait for animation to open
+    
+    // Look for the option. Strict 2000ms timeout so it fails fast if not found.
+    const option = page.getByRole('option', { name: valueToSelect, exact: true }).last();
+    if (await option.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await option.click({ timeout: 2000 });
+      log(`    ✓ Berjaya pilih "${valueToSelect}"`, 'dim');
+    } else {
+      // Fallback: Type and Enter (React-Select standard behavior)
+      log(`    ⚠ Gagal cari pilihan, cuba taip & Enter...`, 'yellow');
+      await page.keyboard.type(valueToSelect);
+      await sleep(500);
+      await page.keyboard.press('Enter');
+    }
+  } catch (e) {
+    log(`    ⚠ Isu dropdown ${labelName}: ${e.message.substring(0, 50)}...`, 'yellow');
+    // Final safety fallback
+    await page.keyboard.type(valueToSelect).catch(() => {});
+    await page.keyboard.press('Enter').catch(() => {});
+  }
+  await sleep(rand(300, 500));
+}
+
+// ROBUST INPUT HANDLER
+async function fillInput(page, labelName, value) {
+  log(`    ↳ Isi ${labelName}: "${String(value).substring(0, 20)}..."`, 'dim');
+  const label = page.locator('label').filter({ hasText: new RegExp(labelName, 'i') }).first();
+  let input;
+
+  if (await label.count() > 0) {
+    // Find input or textarea directly after the label
+    input = label.locator('xpath=following::input[1] | following::textarea[1]').first();
+  }
+  
+  if (!input || await input.count() === 0) {
+    // Fallback to placeholder matching
+    input = page.getByPlaceholder(new RegExp(labelName, 'i')).first();
+  }
+
+  if (input && await input.count() > 0) {
+    await input.fill(String(value), { timeout: 5000 }).catch(() => {
+      log(`    ⚠ Gagal isi ${labelName}`, 'yellow');
+    });
+  }
+  await sleep(rand(200, 400));
 }
 
 async function clickNext(page) {
+  log(`    ↳ Klik "Seterusnya"`, 'dim');
   await page.locator('button:has-text("Seterusnya")').first().click({ timeout: 5000 }).catch(() => {});
   await sleep(rand(1000, 1500)); 
 }
@@ -111,50 +186,49 @@ function padText(text, minLength = 110) {
 }
 
 async function fillStep1(page, book) {
-  log('  Step 1/4: Kategori dan Jenis', 'dim');
-  await selectCustomDropdown(page, 0, book.category || 'Fiksyen');
-  await selectCustomDropdown(page, 1, book.type?.toLowerCase() === 'physical' ? 'Fizikal' : 'E-Buku');
-  await selectCustomDropdown(page, 2, book.language || 'English');
+  log('  Step 1/4: Kategori dan Jenis', 'cyan');
+  await selectDropdown(page, 'Kategori', book.category || 'Fiksyen');
+  await selectDropdown(page, 'Jenis Bahan', book.type?.toLowerCase() === 'physical' ? 'Fizikal' : 'E-Buku');
+  await selectDropdown(page, 'Bahasa', book.language || 'English');
   await clickNext(page);
   await waitForText(page, ['Maklumat Bacaan']);
 }
 
 async function fillStep2(page, book) {
-  log('  Step 2/4: Maklumat Bacaan', 'dim');
-  const inputs = page.locator('input[type="text"], input[type="number"]');
-  
-  await inputs.nth(0).fill(book.title); 
-  await sleep(rand(200, 400));
-  await inputs.nth(1).fill(String(book.year || 2023)); 
-  await sleep(rand(200, 400));
-  await inputs.nth(2).fill(book.author || 'Penulis Tidak Diketahui'); 
-  await sleep(rand(200, 400));
-  if (book.isbn) await inputs.nth(3).fill(book.isbn).catch(() => {}); 
-  await sleep(rand(200, 400));
-  await inputs.nth(4).fill(String(book.pages || 100)); 
-  await sleep(rand(200, 400));
-  await inputs.nth(5).fill(book.publisher || 'Penerbit Umum'); 
+  log('  Step 2/4: Maklumat Bacaan', 'cyan');
+  await fillInput(page, 'Tajuk', book.title);
+  await fillInput(page, 'Tahun Terbitan', book.year || 2023);
+  await fillInput(page, 'Penulis', book.author || 'Penulis Tidak Diketahui');
+  if (book.isbn) await fillInput(page, 'ISBN', book.isbn);
+  await fillInput(page, 'Mukasurat', book.pages || 100);
+  await fillInput(page, 'Penerbit', book.publisher || 'Penerbit Umum');
   
   await clickNext(page);
   await waitForText(page, ['Penilaian dan Rumusan']);
 }
 
 async function fillStep3(page, book) {
-  log('  Step 3/4: Penilaian dan Rumusan', 'dim');
+  log('  Step 3/4: Penilaian dan Rumusan', 'cyan');
   const rating = book.rating || 5;
+  
+  log(`    ↳ Klik Rating Bintang: ${rating}`, 'dim');
   const stars = page.locator('svg[class*="star"], svg[class*="rating"], i[class*="star"], button[class*="star"]');
   if (await stars.count() >= rating) {
-    await stars.nth(rating - 1).click({ force: true }).catch(() => {});
+    await stars.nth(rating - 1).click({ force: true, timeout: 3000 }).catch(() => {});
   } else {
     const starContainers = page.locator('div').filter({ has: page.locator('svg') }).filter({ hasText: /^\s*$/ }); 
-    await starContainers.nth(rating - 1).click({ force: true }).catch(() => {});
+    await starContainers.nth(rating - 1).click({ force: true, timeout: 3000 }).catch(() => {});
   }
   await sleep(rand(500, 1000));
 
-  const textareas = page.locator('textarea');
-  await textareas.nth(0).fill(padText(book.summary, 110));
+  log(`    ↳ Isi Rumusan...`, 'dim');
+  const summaryBox = page.locator('textarea').first();
+  await summaryBox.fill(padText(book.summary, 110), { timeout: 5000 }).catch(() => {});
   await sleep(rand(500, 800));
-  await textareas.nth(1).fill(padText(book.lesson, 110));
+  
+  log(`    ↳ Isi Pengajaran...`, 'dim');
+  const lessonBox = page.locator('textarea').nth(1);
+  await lessonBox.fill(padText(book.lesson, 110), { timeout: 5000 }).catch(() => {});
   await sleep(rand(500, 800));
 
   await clickNext(page);
@@ -162,19 +236,21 @@ async function fillStep3(page, book) {
 }
 
 async function fillStep4AndSubmit(page) {
-  log('  Step 4/4: Semakan & Hantar', 'dim');
+  log('  Step 4/4: Semakan & Hantar', 'cyan');
+  
+  log('    ↳ Menanda checkbox pengesahan...', 'dim');
   const checkbox = page.locator('input[type="checkbox"]').first();
   if (await checkbox.isVisible()) {
-    await checkbox.check({ force: true }).catch(() => {});
+    await checkbox.check({ force: true, timeout: 3000 }).catch(() => {});
   } else {
-    await page.getByText('Ya, saya sahkan maklumat di atas adalah betul.').first().click({ force: true }).catch(() => {});
+    await page.getByText('Ya, saya sahkan maklumat di atas adalah betul.').first().click({ force: true, timeout: 3000 }).catch(() => {});
   }
   await sleep(rand(500, 1000));
 
+  log('    ↳ Klik "Hantar Rekod"...', 'dim');
   await page.locator('button:has-text("Hantar Rekod")').first().click({ timeout: 5000 });
   await sleep(rand(2000, 3000));
   
-  // UPDATED: Now specifically checks for the text in your screenshot
   if (await waitForText(page, ['terima kasih', 'telah dihantar', 'tahniah', 'berjaya'], 10000) || page.url().includes('/web/dashboard')) {
     log('  ✓ Terima kasih! Rekod berjaya dihantar.', 'green');
     return true;
@@ -184,12 +260,13 @@ async function fillStep4AndSubmit(page) {
 
 async function processBook(page, book, index, total) {
   const start = Date.now();
-  log(`[${index}/${total}] Processing: ${book.title}`, 'cyan');
+  log(`\n[${index}/${total}] Memproses: ${book.title}`, 'magenta');
   
   let formLoaded = false;
   let cooldownAttempts = 0;
 
   while (!formLoaded && cooldownAttempts < 5) {
+    log('  Membuka halaman rekod...', 'dim');
     await page.goto(CONFIG.RECORD_URL, { waitUntil: 'domcontentloaded', timeout: 20000 });
     await sleep(2500); 
 
@@ -200,8 +277,7 @@ async function processBook(page, book, index, total) {
     } 
     else if (await waitForText(page, ['hanya boleh ditambah semula', 'Sila cuba lagi', 'Makluman'], 2000)) {
       cooldownAttempts++;
-      log(`⏳ AINS Cooldown Detected (Try ${cooldownAttempts}). Waiting 3 mins 5 secs...`, 'yellow');
-      await sleep(185000); 
+      await countdownSleep(185, `AINS Cooldown (Cubaan ${cooldownAttempts})`); 
     } 
     else {
       await takeScreenshot(page, 'no_form');
@@ -221,7 +297,7 @@ async function processBook(page, book, index, total) {
 
 async function main() {
   log('══════════════════', 'bright');
-  log('  AINS NILAM Bot (Confirmation Fix)', 'bright');
+  log('  AINS NILAM Bot (Anti-Hang + Verbose)', 'bright');
   log('══════════════════', 'bright');
 
   ensureDir(CONFIG.SCREENSHOT_DIR);
@@ -233,7 +309,7 @@ async function main() {
       throw new Error("books.json not found!");
     }
 
-    log('Launching Chrome...', 'yellow');
+    log('Melancarkan Chrome...', 'yellow');
     try {
       context = await chromium.launchPersistentContext(path.resolve(CONFIG.PROFILE_DIR), {
         channel: 'chrome', headless: false, viewport: null, args: ['--start-maximized']
@@ -248,7 +324,7 @@ async function main() {
     page = pages.length > 0 ? pages[0] : await context.newPage();
     page.setDefaultTimeout(CONFIG.TIMEOUT);
 
-    log('Navigating to AINS Dashboard...', 'yellow');
+    log('Navigasi ke AINS Dashboard...', 'yellow');
     await page.goto(CONFIG.DASHBOARD_URL, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
     await sleep(4000);
 
@@ -286,7 +362,7 @@ async function main() {
         
         if (i < batch.length - 1) { 
             const g = rand(CONFIG.MIN_BOOK_GAP, CONFIG.MAX_BOOK_GAP); 
-            log(`  Jeda pendek: ${Math.round(g/1000)}s`, 'dim'); 
+            log(`  Jeda pendek: ${Math.round(g/1000)}s sebelum semak cooldown seterusnya...`, 'dim'); 
             await sleep(g); 
         }
       } catch (e) {
@@ -294,6 +370,7 @@ async function main() {
         log(`  ✗ Ralat: ${e.message}`, 'red');
         await takeScreenshot(page, `err_${books.indexOf(book)}`);
         saveProgress(book, 'failed', e.message); failed++;
+        log('  Kembali ke Dashboard untuk pemulihan...', 'yellow');
         await page.goto(CONFIG.DASHBOARD_URL, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
         await sleep(5000);
       }
