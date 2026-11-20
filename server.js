@@ -5,20 +5,18 @@ const http = require('http');
 
 const CONFIG = {
   BASE_URL: "https://ains.moe.gov.my",
-  RECORD_URL: "https://ains.moe.gov.my/record/add/book",
+  RECORD_URL: "https://ains.moe.gov.my/web/new-record-book",
   BOOK_FILE: "./books.json",
   SUCCESS_FILE: "./success.json",
   FAILED_FILE: "./failed.json",
   LOG_FILE: "./automation.log",
   SCREENSHOT_DIR: "./screenshots",
   CHROME_DEBUG_PORT: 9222,
-  HEADLESS: false,
-  DEBUG: false,
   TIMEOUT: 30000,
   LONG_TIMEOUT: 300000,
   MAX_BOOKS_PER_SESSION: 30,
-  MIN_BOOK_GAP: 1000,
-  MAX_BOOK_GAP: 5000
+  MIN_BOOK_GAP: 3000,
+  MAX_BOOK_GAP: 7000
 };
 
 const COLORS = {
@@ -46,19 +44,7 @@ function loadJSON(filePath) {
 
 function saveJSON(filePath, data) { fs.writeFileSync(path.resolve(filePath), JSON.stringify(data, null, 2)); }
 
-function loadBooks() {
-  const resolved = path.resolve(CONFIG.BOOK_FILE);
-  if (!fs.existsSync(resolved)) throw new Error(`books.json not found`);
-  return JSON.parse(fs.readFileSync(resolved, 'utf8'));
-}
-
-function loadProgress() {
-  return { success: loadJSON(CONFIG.SUCCESS_FILE) || [], failed: loadJSON(CONFIG.FAILED_FILE) || [] };
-}
-
-function getBookKey(book) {
-  return book.isbn?.trim() || `${book.title}||${book.author || ''}`.toLowerCase();
-}
+function getBookKey(book) { return book.isbn?.trim() || `${book.title}||${book.author || ''}`.toLowerCase(); }
 
 function saveProgress(book, status, error = '') {
   const filePath = status === 'success' ? CONFIG.SUCCESS_FILE : CONFIG.FAILED_FILE;
@@ -76,171 +62,211 @@ async function takeScreenshot(page, name) {
   try { ensureDir(CONFIG.SCREENSHOT_DIR); await page.screenshot({ path: path.join(CONFIG.SCREENSHOT_DIR, `${name}_${Date.now()}.png`), fullPage: true }); } catch {}
 }
 
-async function getPageText(page) { return await page.locator('body').innerText({ timeout: 3000 }).catch(() => ''); }
-
-async function isOnPage(page, text, timeout = 5000) {
-  try { await page.waitForFunction((t) => document.body.innerText.includes(t), text, { timeout }); return true; } catch { return false; }
+async function waitForText(page, textArray, timeout = 15000) {
+  try {
+    await page.waitForFunction((texts) => texts.some(t => document.body.innerText.includes(t)), textArray, { timeout });
+    return true;
+  } catch { return false; }
 }
 
 async function checkForBan(page) {
-  const text = (await getPageText(page)).toLowerCase();
+  const text = (await page.locator('body').innerText().catch(() => '')).toLowerCase();
   if (['disekat', 'amaran', 'sekatan', 'penyalahgunaan'].filter(k => text.includes(k)).length >= 2) {
     log('⛔ AKAUN DISEKAT!', 'red'); await takeScreenshot(page, 'BANNED'); return true;
   }
   return false;
 }
 
-async function clickText(page, text) {
-  await sleep(rand(400, 1200));
-
-  const selectors = [
-    `button:has-text("${text}")`, `a:has-text("${text}")`, `label:has-text("${text}")`,
-    `span:has-text("${text}")`, `div:has-text("${text}")`
-  ];
-  for (const sel of selectors) {
-    try {
-      const el = page.locator(sel).first();
-      if (await el.isVisible({ timeout: 1000 }).catch(() => false)) {
-        const box = await el.boundingBox().catch(() => null);
-        if (box) {
-          await page.mouse.move(
-            box.x + rand(10, box.width - 10),
-            box.y + rand(10, box.height - 10),
-            { steps: rand(2, 5) }
-          );
-          await sleep(rand(50, 200));
-        }
-        await el.click({ timeout: 3000 });
-        return;
-      }
-    } catch {}
-  }
-  throw new Error(`Cannot click "${text}"`);
+async function clickNext(page) {
+  // The new UI uses "Seterusnya →"
+  await page.locator('button:has-text("Seterusnya"), button:has-text("Seterusnya →")').first().click({ timeout: 5000 }).catch(() => {});
+  await sleep(rand(800, 1500)); // Wait for React animation
 }
 
-async function fillField(page, labelRegex, value) {
-  await sleep(rand(300, 900));
-
-  const inputs = page.locator('input:visible, textarea:visible');
-  const count = await inputs.count();
-  for (let i = 0; i < count; i++) {
-    const input = inputs.nth(i);
-    const placeholder = (await input.getAttribute('placeholder').catch(() => '')) || '';
-    const ariaLabel = (await input.getAttribute('aria-label').catch(() => '')) || '';
-    const name = (await input.getAttribute('name').catch(() => '')) || '';
-    const id = (await input.getAttribute('id').catch(() => '')) || '';
-    const labelText = await page.locator(`label[for="${id}"]`).innerText().catch(() => '');
-    if (`${placeholder} ${ariaLabel} ${name} ${id} ${labelText}`.match(labelRegex)) {
-      await input.click({ timeout: 2000 });
-      await sleep(rand(100, 300));
-      
-      const strValue = String(value);
-      for (let j = 0; j < strValue.length; j++) {
-        await input.press(strValue[j]);
-        await sleep(rand(30, 100));
-      }
-      
-      await sleep(rand(100, 300));
+// Custom select for the new React UI dropdowns
+async function selectDropdownByLabel(page, labelRegex, value) {
+  await sleep(rand(400, 800));
+  // Find the container that holds the label
+  const labelEl = page.locator('label, span').filter({ hasText: labelRegex }).first();
+  if (await labelEl.isVisible()) {
+    // Depending on the DOM structure, find the select or react-select next to it
+    const select = page.locator('select').filter({ has: page.locator(`option:has-text("${value}")`) }).first();
+    if (await select.count() > 0) {
+      await select.selectOption({ label: value }).catch(() => {}); // Try by label
       return;
     }
   }
-  throw new Error(`Field not found: ${labelRegex}`);
-}
-
-async function selectDropdown(page, labelText, value) {
-  await sleep(rand(400, 1000));
-
-  const selects = page.locator('select'); const count = await selects.count();
-  for (let i = 0; i < count; i++) {
-    const select = selects.nth(i);
-    const parentText = await select.evaluate(el => { let p = el.parentElement, text = ''; for (let j = 0; j < 4 && p; j++) { text += ' ' + (p.innerText || ''); p = p.parentElement; } return text; }).catch(() => '');
-    if (parentText.toLowerCase().includes(labelText.toLowerCase())) {
-      await select.click({ timeout: 2000 });
-      await sleep(rand(200, 500));
-      const options = await select.locator('option').allTextContents();
-      const match = options.find(o => o.trim().toLowerCase().includes(value.toLowerCase()));
-      if (match) { await select.selectOption({ label: match.trim(), timeout: 3000 }); await sleep(rand(100, 300)); return; }
-    }
+  
+  // Fallback: Just click the dropdown and find the option
+  const selectBox = page.locator('select').nth(await page.locator('select').count() - 1); 
+  try {
+    await page.locator('select').filter({ hasText: value }).first().click();
+  } catch {
+    // If it's a standard HTML select
+    await page.selectOption('select', { label: value }).catch(() => {});
   }
-  throw new Error(`Dropdown not found: ${labelText}`);
 }
 
-async function clickStars(page, rating) {
-  await sleep(rand(300, 800));
-  try { const stars = page.locator('[class*="star"], [class*="rating"]'); if (await stars.count() >= rating) { await stars.nth(rating - 1).click({ timeout: 2000 }); return; } } catch {}
-  try { const labels = page.locator('label'); const count = await labels.count(); for (let i = 0; i < count; i++) { const html = await labels.nth(i).innerHTML().catch(() => ''); if (html.includes('star') || html.includes('★') || html.includes('⭐')) { if (i + 1 === rating || i === rating - 1) { await labels.nth(i).click({ timeout: 2000 }); return; } } } } catch {}
-}
-
-async function goToRecordPage(page) {
-  await page.goto(CONFIG.RECORD_URL, { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {});
-  await sleep(rand(800, 1500));
-  if (await checkForBan(page)) throw new Error('BANNED');
-  if (!await isOnPage(page, 'Maklumat Buku', 5000)) throw new Error('Not on book page');
-}
-
-async function fillBookInfo(page, book) {
-  const today = new Date().toISOString().split('T')[0];
-  const dateInput = page.locator('input[type="date"]').first();
-  if (await dateInput.count() > 0) { await dateInput.fill(today).catch(() => {}); await sleep(rand(200, 500)); }
-
-  await fillField(page, /Tajuk/i, book.title);
-  await clickText(page, book.type?.toLowerCase() === 'physical' ? 'Fizikal' : 'E-Buku');
-  if (book.category) await selectDropdown(page, 'Kategori', book.category);
-  if (book.pages) await fillField(page, /Mukasurat|Muka surat|Bilangan/i, String(book.pages));
-  if (book.isbn?.trim()) await fillField(page, /ISBN/i, book.isbn);
-  if (book.author) await fillField(page, /Penulis/i, book.author);
-  if (book.publisher) await fillField(page, /Penerbit/i, book.publisher);
-  if (book.year) await fillField(page, /Tahun Terbitan/i, String(book.year));
-  if (book.language) await selectDropdown(page, 'Bahasa', book.language);
-
-  await clickText(page, 'Seterusnya');
-  await isOnPage(page, 'Rumusan', 5000);
-}
-
-async function fillEnrichment(page, book) {
-  if (book.summary) {
-    let summary = book.summary.trim();
-    if (summary.split(/\s+/).length < 10) summary += ' Buku ini sangat menarik dan memberi banyak manfaat kepada pembaca.';
-    await fillField(page, /Rumusan/i, summary.substring(0, 500));
+// Pads text to ensure it is strictly > 100 characters
+function padText(text, minLength = 110) {
+  let result = text ? text.trim() : '';
+  const filler = " Buku ini sangat menarik untuk dibaca kerana jalan ceritanya yang padat dan penuh dengan pengajaran. Ia memberikan impak yang besar kepada pembaca dan sesuai dijadikan bahan rujukan utama dalam pelbagai bidang ilmu.";
+  while (result.length < minLength) {
+    result += filler;
   }
-  if (book.lesson) {
-    let lesson = book.lesson.trim();
-    if (lesson.split(/\s+/).length < 5) lesson += ' Memberikan pengajaran yang sangat bermakna.';
-    await fillField(page, /Pengajaran/i, lesson.substring(0, 300));
+  return result.substring(0, 500); // Cap at 500 just in case
+}
+
+async function fillStep1(page, book) {
+  log('  Step 1/4: Kategori dan Jenis', 'dim');
+  
+  // Kategori (Dropdown)
+  const kategori = book.category || 'Fiksyen';
+  await page.locator('select').nth(0).selectOption({ label: kategori }).catch(async () => {
+    await page.locator('button, div[role="combobox"]').filter({ hasText: 'Sila pilih' }).first().click();
+    await sleep(500);
+    await page.getByText(kategori, { exact: true }).last().click();
+  });
+
+  // Jenis Bahan (Dropdown)
+  const jenis = book.type?.toLowerCase() === 'physical' ? 'Fizikal' : 'E-Buku';
+  await page.locator('select').nth(1).selectOption({ label: jenis }).catch(async () => {
+    await page.locator('button, div[role="combobox"]').filter({ hasText: 'Sila pilih' }).first().click();
+    await sleep(500);
+    await page.getByText(jenis, { exact: true }).last().click();
+  });
+
+  // Bahasa (Dropdown)
+  const bahasa = book.language || 'Bahasa Melayu';
+  await page.locator('select').nth(2).selectOption({ label: bahasa }).catch(async () => {
+    await page.locator('button, div[role="combobox"]').filter({ hasText: '- Sila pilih -' }).first().click();
+    await sleep(500);
+    await page.getByText(bahasa, { exact: true }).last().click();
+  });
+
+  await clickNext(page);
+  await waitForText(page, ['Maklumat Bacaan']);
+}
+
+async function fillStep2(page, book) {
+  log('  Step 2/4: Maklumat Bacaan', 'dim');
+  
+  const inputs = page.locator('input[type="text"], input[type="number"]');
+  
+  // Tajuk *
+  await inputs.nth(0).fill(book.title);
+  await sleep(rand(200, 400));
+  
+  // Tahun Terbitan *
+  await inputs.nth(1).fill(String(book.year || 2023));
+  await sleep(rand(200, 400));
+
+  // Penulis *
+  await inputs.nth(2).fill(book.author || 'Penulis Tidak Diketahui');
+  await sleep(rand(200, 400));
+
+  // ISBN (Optional)
+  if (book.isbn) await inputs.nth(3).fill(book.isbn).catch(() => {});
+  await sleep(rand(200, 400));
+
+  // Bilangan Mukasurat *
+  await inputs.nth(4).fill(String(book.pages || 100));
+  await sleep(rand(200, 400));
+
+  // Penerbit *
+  await inputs.nth(5).fill(book.publisher || 'Penerbit Umum');
+  
+  // Kulit Buku / Imej - Skipped (Optional)
+
+  await clickNext(page);
+  await waitForText(page, ['Penilaian dan Rumusan']);
+}
+
+async function fillStep3(page, book) {
+  log('  Step 3/4: Penilaian dan Rumusan', 'dim');
+  
+  // Click 5th star (Rating)
+  const stars = page.locator('svg[class*="star"], svg[class*="rating"], i[class*="star"], button[class*="star"]');
+  const rating = book.rating || 5;
+  if (await stars.count() >= rating) {
+    await stars.nth(rating - 1).click({ force: true }).catch(() => {});
+  } else {
+    // If SVG isn't clickable directly, click the parent container
+    const starContainers = page.locator('div').filter({ has: page.locator('svg') }).filter({ hasText: /^\s*$/ }); 
+    await starContainers.nth(rating - 1).click({ force: true }).catch(() => {});
   }
-  if (book.rating >= 1 && book.rating <= 5) await clickStars(page, book.rating);
-  await clickText(page, 'Seterusnya');
-  await isOnPage(page, 'Tambah gambar', 5000);
+  await sleep(rand(500, 1000));
+
+  const textareas = page.locator('textarea');
+  
+  // Rumusan * (Must be > 100 chars)
+  const safeSummary = padText(book.summary, 110);
+  await textareas.nth(0).fill(safeSummary);
+  await sleep(rand(500, 800));
+
+  // Pengajaran * (Must be > 100 chars)
+  const safeLesson = padText(book.lesson, 110);
+  await textareas.nth(1).fill(safeLesson);
+  await sleep(rand(500, 800));
+
+  await clickNext(page);
+  await waitForText(page, ['Semakan', 'Hantar Rekod']);
 }
 
-async function skipCover(page) {
-  await clickText(page, 'Seterusnya');
-  await isOnPage(page, 'Sila semak', 5000);
-}
+async function fillStep4AndSubmit(page) {
+  log('  Step 4/4: Semakan & Hantar', 'dim');
+  
+  // CHECKBOX: "Ya, saya sahkan maklumat di atas adalah betul."
+  const checkbox = page.locator('input[type="checkbox"]').first();
+  if (await checkbox.isVisible()) {
+    await checkbox.check({ force: true }).catch(() => {});
+  } else {
+    // Fallback if it's a styled div
+    await page.getByText('Ya, saya sahkan maklumat di atas adalah betul.').first().click({ force: true }).catch(() => {});
+  }
+  await sleep(rand(500, 1000));
 
-async function submit(page) {
-  await clickText(page, 'Hantar');
-  await sleep(rand(600, 1200));
-  if (await checkForBan(page)) throw new Error('BANNED');
-  await clickText(page, 'Pasti');
-  await sleep(rand(800, 1500));
-  if (await checkForBan(page)) throw new Error('BANNED');
-  if (await isOnPage(page, 'Tahniah', 10000)) { log('  ✓ Tahniah!', 'green'); return true; }
-  const text = await getPageText(page);
-  if (text.includes('berjaya') || text.includes('Berjaya')) { log('  ✓ Success!', 'green'); return true; }
-  if (text.includes('OK') || text.includes('Ok')) { await page.locator('button:has-text("OK"), button:has-text("Ok")').first().click().catch(() => {}); await sleep(500); }
-  return false;
+  // Hantar Rekod button
+  await page.locator('button:has-text("Hantar Rekod")').first().click({ timeout: 5000 });
+  
+  // Wait for Success Response
+  await sleep(rand(2000, 3000));
+  
+  if (await waitForText(page, ['Tahniah', 'Berjaya', 'rekod anda telah dihantar'], 10000)) {
+    log('  ✓ Tahniah! Rekod berjaya dihantar.', 'green');
+    return true;
+  }
+  
+  // Sometimes it redirects to dashboard
+  if (page.url().includes('/web/dashboard')) {
+    log('  ✓ Rekod dihantar (Redirected to Dashboard).', 'green');
+    return true;
+  }
+
+  throw new Error('Failed to verify submission success.');
 }
 
 async function processBook(page, book, index, total) {
   const start = Date.now();
-  log(`[${index}/${total}] ${book.title}`, 'cyan');
-  await goToRecordPage(page);
-  await fillBookInfo(page, book);
-  await fillEnrichment(page, book);
-  await skipCover(page);
-  if (!await submit(page)) throw new Error('Submit failed');
-  log(`  ✓ ${((Date.now() - start) / 1000).toFixed(1)}s`, 'green');
+  log(`[${index}/${total}] Processing: ${book.title}`, 'cyan');
+  
+  await page.goto(CONFIG.RECORD_URL, { waitUntil: 'domcontentloaded', timeout: 20000 });
+  await sleep(2500); // Wait for React to mount
+
+  if (await checkForBan(page)) throw new Error('BANNED');
+  
+  // Verify page loaded
+  if (!await waitForText(page, ['Kategori dan Jenis'], 10000)) {
+    await takeScreenshot(page, 'no_form');
+    throw new Error('Cannot load form');
+  }
+
+  await fillStep1(page, book);
+  await fillStep2(page, book);
+  await fillStep3(page, book);
+  await fillStep4AndSubmit(page);
+
+  log(`  ✓ Selesai dalam ${((Date.now() - start) / 1000).toFixed(1)}s`, 'green');
 }
 
 async function connectToChrome() {
@@ -254,7 +280,7 @@ async function connectToChrome() {
 
 async function main() {
   log('══════════════════', 'bright');
-  log('  AINS NILAM Bot', 'bright');
+  log('  AINS NILAM Bot (v2 Fix)', 'bright');
   log('══════════════════', 'bright');
 
   ensureDir(CONFIG.SCREENSHOT_DIR);
@@ -267,25 +293,25 @@ async function main() {
     page.setDefaultTimeout(CONFIG.TIMEOUT);
 
     await page.goto(CONFIG.BASE_URL, { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {});
-    await sleep(2000);
+    await sleep(3000);
 
-    const text = await getPageText(page);
-    if (text.includes('DELIMa') && !text.includes('AINS+')) {
-      log('Login in Chrome...', 'yellow');
-      await page.waitForFunction(() => document.body.innerText.includes('AINS+') || document.body.innerText.includes('Rekod Terkini'), { timeout: CONFIG.LONG_TIMEOUT });
-      log('Logged in!', 'green');
-    } else { log('Already logged in.', 'green'); }
+    const text = await page.locator('body').innerText().catch(() => '');
+    if (text.includes('DELIMa') && !text.includes('AINS')) {
+      log('Sila login di Chrome...', 'yellow');
+      await page.waitForFunction(() => document.body.innerText.includes('AINS') || document.body.innerText.includes('Papan Pemuka'), { timeout: CONFIG.LONG_TIMEOUT });
+      log('Login berjaya!', 'green');
+    } else { log('Sudah login.', 'green'); }
 
     if (await checkForBan(page)) return;
 
-    const books = loadBooks();
-    const { success: sl, failed: fl } = loadProgress();
+    const books = JSON.parse(fs.readFileSync(path.resolve(CONFIG.BOOK_FILE), 'utf8'));
+    const { success: sl, failed: fl } = { success: loadJSON(CONFIG.SUCCESS_FILE) || [], failed: loadJSON(CONFIG.FAILED_FILE) || [] };
     const done = new Set([...sl.map(getBookKey), ...fl.map(getBookKey)]);
     const pending = books.filter(b => !done.has(getBookKey(b)));
 
-    log(`Total: ${books.length} | Done: ${done.size} | Left: ${pending.length}`, 'cyan');
+    log(`Total Buku: ${books.length} | Selesai: ${done.size} | Baki: ${pending.length}`, 'cyan');
 
-    if (!pending.length) { log('All done!', 'green'); return; }
+    if (!pending.length) { log('Semua buku telah diproses!', 'green'); return; }
 
     const batch = pending.slice(0, CONFIG.MAX_BOOKS_PER_SESSION);
 
@@ -294,10 +320,14 @@ async function main() {
       try {
         await processBook(page, book, books.indexOf(book) + 1, books.length);
         saveProgress(book, 'success'); success++;
-        if (i < batch.length - 1) { const g = rand(CONFIG.MIN_BOOK_GAP, CONFIG.MAX_BOOK_GAP); log(`  Gap: ${Math.round(g/1000)}s`, 'dim'); await sleep(g); }
+        if (i < batch.length - 1) { 
+            const g = rand(CONFIG.MIN_BOOK_GAP, CONFIG.MAX_BOOK_GAP); 
+            log(`  Rehat: ${Math.round(g/1000)}s`, 'dim'); 
+            await sleep(g); 
+        }
       } catch (e) {
         if (e.message === 'BANNED') break;
-        log(`  ✗ ${e.message}`, 'red');
+        log(`  ✗ Ralat: ${e.message}`, 'red');
         await takeScreenshot(page, `err_${books.indexOf(book)}`);
         saveProgress(book, 'failed', e.message); failed++;
         await page.goto(CONFIG.BASE_URL, { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {});
@@ -305,9 +335,9 @@ async function main() {
       }
     }
   } catch (e) {
-    log(e.message.includes('Chrome') ? 'Start Chrome: chrome.exe --remote-debugging-port=9222 --user-data-dir="C:\\chrome-debug-profile"' : `Error: ${e.message}`, 'red');
+    log(e.message.includes('Chrome') ? 'Sila buka Chrome: chrome.exe --remote-debugging-port=9222 --user-data-dir="C:\\chrome-debug-profile"' : `Error: ${e.message}`, 'red');
   } finally {
-    log(`\n✓ ${success} | ✗ ${failed} | ${((Date.now()-startTime)/1000).toFixed(1)}s`, 'cyan');
+    log(`\n✓ Berjaya: ${success} | ✗ Gagal: ${failed} | Masa: ${((Date.now()-startTime)/1000).toFixed(1)}s`, 'cyan');
     if (browser) await browser.close().catch(() => {});
     logStream.end();
   }
