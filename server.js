@@ -1,7 +1,6 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
-const http = require('http');
 
 const CONFIG = {
   BASE_URL: "https://ains.moe.gov.my",
@@ -11,7 +10,6 @@ const CONFIG = {
   FAILED_FILE: "./failed.json",
   LOG_FILE: "./automation.log",
   SCREENSHOT_DIR: "./screenshots",
-  CHROME_DEBUG_PORT: 9222,
   TIMEOUT: 30000,
   LONG_TIMEOUT: 300000,
   MAX_BOOKS_PER_SESSION: 30,
@@ -80,7 +78,6 @@ async function checkForBan(page) {
 async function selectCustomDropdown(page, index, valueToSelect) {
   await sleep(rand(500, 1000));
   
-  // Try native <select> first (most reliable)
   const nativeSelects = page.locator('select');
   if (await nativeSelects.count() > index) {
     const select = nativeSelects.nth(index);
@@ -89,12 +86,11 @@ async function selectCustomDropdown(page, index, valueToSelect) {
         await select.selectOption({ label: valueToSelect });
         return;
       } catch (e) {
-        // Fallback to custom dropdown if option doesn't exist natively
+        // Fallback to custom dropdown
       }
     }
   }
   
-  // Custom React Dropdown fallback
   const dropdowns = page.locator('div[role="combobox"], button, .css-1dimb5e-control, [class*="control"]');
   const target = dropdowns.nth(index);
   await target.click({ force: true });
@@ -236,22 +232,13 @@ async function processBook(page, book, index, total) {
   log(`  ✓ Selesai dalam ${((Date.now() - start) / 1000).toFixed(1)}s`, 'green');
 }
 
-async function connectToChrome() {
-  const response = await new Promise((resolve, reject) => {
-    http.get(`http://localhost:${CONFIG.CHROME_DEBUG_PORT}/json/version`, (res) => {
-      let data = ''; res.on('data', c => data += c); res.on('end', () => resolve(data));
-    }).on('error', reject);
-  });
-  return JSON.parse(response).webSocketDebuggerUrl;
-}
-
 async function main() {
   log('══════════════════', 'bright');
-  log('  AINS NILAM Bot (Fixed)', 'bright');
+  log('  AINS NILAM Bot (Standalone)', 'bright');
   log('══════════════════', 'bright');
 
   ensureDir(CONFIG.SCREENSHOT_DIR);
-  let browser, page, success = 0, failed = 0;
+  let context, page, success = 0, failed = 0;
   const startTime = Date.now();
 
   try {
@@ -259,34 +246,27 @@ async function main() {
       throw new Error("books.json not found! Please create it in this folder.");
     }
 
-    browser = await chromium.connectOverCDP(await connectToChrome());
+    log('Launching Chrome...', 'yellow');
     
-    // --- FIX: Safe Page Retrieval ---
-    const contexts = browser.contexts();
-    if (contexts.length === 0) {
-      throw new Error("No browser context found. Please ensure Chrome is open.");
+    // Try using Google Chrome first, fallback to Chromium
+    try {
+      context = await chromium.launchPersistentContext('C:\\chrome-debug-profile', {
+        channel: 'chrome',
+        headless: false,
+        viewport: null,
+        args: ['--start-maximized']
+      });
+    } catch (e) {
+      log('Google Chrome not found, using Playwright Chromium...', 'yellow');
+      context = await chromium.launchPersistentContext('C:\\chrome-debug-profile', {
+        headless: false,
+        viewport: null,
+        args: ['--start-maximized']
+      });
     }
-    const context = contexts[0];
-    let pages = context.pages();
-    
-    if (pages.length > 0) {
-      page = pages[0];
-    } else {
-      log('No open tabs found. Waiting for Chrome to initialize...', 'yellow');
-      await sleep(2000);
-      pages = context.pages();
-      if (pages.length > 0) {
-        page = pages[0];
-      } else {
-        try {
-          page = await context.newPage();
-        } catch (err) {
-          throw new Error("Failed to attach to Chrome. Please open a new tab (Ctrl+T) in Chrome manually before running the script.");
-        }
-      }
-    }
-    // --------------------------------
 
+    const pages = context.pages();
+    page = pages.length > 0 ? pages[0] : await context.newPage();
     page.setDefaultTimeout(CONFIG.TIMEOUT);
 
     await page.goto(CONFIG.BASE_URL, { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {});
@@ -294,7 +274,7 @@ async function main() {
 
     const text = await page.locator('body').innerText().catch(() => '');
     if (text.includes('DELIMa') && !text.includes('AINS')) {
-      log('Sila login di Chrome...', 'yellow');
+      log('Sila login di tetingkap Chrome yang terbuka...', 'yellow');
       await page.waitForFunction(() => document.body.innerText.includes('AINS') || document.body.innerText.includes('Papan Pemuka'), { timeout: CONFIG.LONG_TIMEOUT });
       log('Login berjaya!', 'green');
     } else { log('Sudah login.', 'green'); }
@@ -332,10 +312,10 @@ async function main() {
       }
     }
   } catch (e) {
-    log(e.message.includes('Chrome') ? 'Sila buka Chrome: chrome.exe --remote-debugging-port=9222 --user-data-dir="C:\\chrome-debug-profile"' : `Error: ${e.message}`, 'red');
+    log(`Error: ${e.message}`, 'red');
   } finally {
     log(`\n✓ Berjaya: ${success} | ✗ Gagal: ${failed} | Masa: ${((Date.now()-startTime)/1000).toFixed(1)}s`, 'cyan');
-    if (browser) await browser.close().catch(() => {});
+    if (context) await context.close().catch(() => {});
     logStream.end();
   }
 }
