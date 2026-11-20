@@ -1,7 +1,6 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
-const http = require('http');
 
 const CONFIG = {
   BASE_URL: "https://ains.moe.gov.my",
@@ -11,8 +10,7 @@ const CONFIG = {
   FAILED_FILE: "./failed.json",
   LOG_FILE: "./automation.log",
   SCREENSHOT_DIR: "./screenshots",
-  CHROME_DEBUG_HOST: "127.0.0.1",
-  CHROME_DEBUG_PORT: 9222,
+  PROFILE_DIR: "./chrome-profile", // Local folder, safe from Windows locks
   TIMEOUT: 30000,
   LONG_TIMEOUT: 300000,
   MAX_BOOKS_PER_SESSION: 30,
@@ -81,7 +79,6 @@ async function checkForBan(page) {
 async function selectCustomDropdown(page, index, valueToSelect) {
   await sleep(rand(500, 1000));
   
-  // Try native <select> first (most reliable)
   const nativeSelects = page.locator('select');
   if (await nativeSelects.count() > index) {
     const select = nativeSelects.nth(index);
@@ -89,13 +86,10 @@ async function selectCustomDropdown(page, index, valueToSelect) {
       try {
         await select.selectOption({ label: valueToSelect });
         return;
-      } catch (e) {
-        // Fallback to custom dropdown if option doesn't exist natively
-      }
+      } catch (e) {}
     }
   }
   
-  // Custom React Dropdown fallback
   const dropdowns = page.locator('div[role="combobox"], button, .css-1dimb5e-control, [class*="control"]');
   const target = dropdowns.nth(index);
   await target.click({ force: true });
@@ -112,48 +106,33 @@ async function clickNext(page) {
 function padText(text, minLength = 110) {
   let result = text ? text.trim() : '';
   const filler = " Buku ini sangat menarik untuk dibaca kerana jalan ceritanya yang padat dan penuh dengan pengajaran. Ia memberikan impak yang besar kepada pembaca dan sesuai dijadikan bahan rujukan utama dalam pelbagai bidang ilmu.";
-  while (result.length < minLength) {
-    result += filler;
-  }
+  while (result.length < minLength) { result += filler; }
   return result.substring(0, 500);
 }
 
 async function fillStep1(page, book) {
   log('  Step 1/4: Kategori dan Jenis', 'dim');
-  
-  const kategori = book.category || 'Fiksyen';
-  await selectCustomDropdown(page, 0, kategori);
-
-  const jenis = book.type?.toLowerCase() === 'physical' ? 'Fizikal' : 'E-Buku';
-  await selectCustomDropdown(page, 1, jenis);
-
-  const bahasa = book.language || 'English';
-  await selectCustomDropdown(page, 2, bahasa);
-
+  await selectCustomDropdown(page, 0, book.category || 'Fiksyen');
+  await selectCustomDropdown(page, 1, book.type?.toLowerCase() === 'physical' ? 'Fizikal' : 'E-Buku');
+  await selectCustomDropdown(page, 2, book.language || 'English');
   await clickNext(page);
   await waitForText(page, ['Maklumat Bacaan']);
 }
 
 async function fillStep2(page, book) {
   log('  Step 2/4: Maklumat Bacaan', 'dim');
-  
   const inputs = page.locator('input[type="text"], input[type="number"]');
   
   await inputs.nth(0).fill(book.title); 
   await sleep(rand(200, 400));
-  
   await inputs.nth(1).fill(String(book.year || 2023)); 
   await sleep(rand(200, 400));
-
   await inputs.nth(2).fill(book.author || 'Penulis Tidak Diketahui'); 
   await sleep(rand(200, 400));
-
   if (book.isbn) await inputs.nth(3).fill(book.isbn).catch(() => {}); 
   await sleep(rand(200, 400));
-
   await inputs.nth(4).fill(String(book.pages || 100)); 
   await sleep(rand(200, 400));
-
   await inputs.nth(5).fill(book.publisher || 'Penerbit Umum'); 
   
   await clickNext(page);
@@ -162,7 +141,6 @@ async function fillStep2(page, book) {
 
 async function fillStep3(page, book) {
   log('  Step 3/4: Penilaian dan Rumusan', 'dim');
-  
   const rating = book.rating || 5;
   const stars = page.locator('svg[class*="star"], svg[class*="rating"], i[class*="star"], button[class*="star"]');
   if (await stars.count() >= rating) {
@@ -174,13 +152,9 @@ async function fillStep3(page, book) {
   await sleep(rand(500, 1000));
 
   const textareas = page.locator('textarea');
-  
-  const safeSummary = padText(book.summary, 110);
-  await textareas.nth(0).fill(safeSummary);
+  await textareas.nth(0).fill(padText(book.summary, 110));
   await sleep(rand(500, 800));
-
-  const safeLesson = padText(book.lesson, 110);
-  await textareas.nth(1).fill(safeLesson);
+  await textareas.nth(1).fill(padText(book.lesson, 110));
   await sleep(rand(500, 800));
 
   await clickNext(page);
@@ -189,7 +163,6 @@ async function fillStep3(page, book) {
 
 async function fillStep4AndSubmit(page) {
   log('  Step 4/4: Semakan & Hantar', 'dim');
-  
   const checkbox = page.locator('input[type="checkbox"]').first();
   if (await checkbox.isVisible()) {
     await checkbox.check({ force: true }).catch(() => {});
@@ -199,19 +172,12 @@ async function fillStep4AndSubmit(page) {
   await sleep(rand(500, 1000));
 
   await page.locator('button:has-text("Hantar Rekod")').first().click({ timeout: 5000 });
-  
   await sleep(rand(2000, 3000));
   
-  if (await waitForText(page, ['Tahniah', 'Berjaya', 'rekod anda telah dihantar'], 10000)) {
+  if (await waitForText(page, ['Tahniah', 'Berjaya', 'rekod anda telah dihantar'], 10000) || page.url().includes('/web/dashboard')) {
     log('  ✓ Tahniah! Rekod berjaya dihantar.', 'green');
     return true;
   }
-  
-  if (page.url().includes('/web/dashboard')) {
-    log('  ✓ Rekod dihantar (Redirected to Dashboard).', 'green');
-    return true;
-  }
-
   throw new Error('Failed to verify submission success.');
 }
 
@@ -237,120 +203,13 @@ async function processBook(page, book, index, total) {
   log(`  ✓ Selesai dalam ${((Date.now() - start) / 1000).toFixed(1)}s`, 'green');
 }
 
-// ───────────────────────── Chrome connection ─────────────────────────
-
-// Never let a single CDP call sit silently forever
-function withTimeout(promise, ms, label = 'operation') {
-  let timer;
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms / 1000}s`)), ms); })
-  ]).finally(() => clearTimeout(timer));
-}
-
-const LAUNCH_HINT = 'start chrome --remote-debugging-port=9222 --user-data-dir="C:\\chrome-debug-profile"';
-
-// Plain HTTP call to Chrome's DevTools endpoint (127.0.0.1 avoids the Node 17+ "localhost -> ::1" problem)
-function devtoolsRequest(pathname, method = 'GET') {
-  return new Promise((resolve, reject) => {
-    const req = http.request(
-      { host: CONFIG.CHROME_DEBUG_HOST, port: CONFIG.CHROME_DEBUG_PORT, path: pathname, method, timeout: 5000 },
-      (res) => {
-        let data = '';
-        res.on('data', c => data += c);
-        res.on('end', () => resolve(data));
-      }
-    );
-    req.on('timeout', () => req.destroy(new Error('DevTools request timed out')));
-    req.on('error', reject);
-    req.end();
-  });
-}
-
-async function connectToChrome() {
-  try {
-    const version = JSON.parse(await devtoolsRequest('/json/version'));
-    return version.webSocketDebuggerUrl;
-  } catch (e) {
-    const err = new Error(`Cannot reach Chrome on port ${CONFIG.CHROME_DEBUG_PORT}: ${e.message}`);
-    err.code = 'CHROME_NOT_REACHABLE';
-    throw err;
-  }
-}
-
-// What the debug-port Chrome itself says it has open (useful to see if you're attached to the right Chrome)
-async function listDebugTabs() {
-  try {
-    const tabs = JSON.parse(await devtoolsRequest('/json/list'));
-    return tabs.filter(t => t.type === 'page');
-  } catch { return []; }
-}
-
-function allPages(browser) {
-  return browser.contexts().flatMap(c => c.pages()).filter(p => !p.isClosed() && !p.url().startsWith('devtools://'));
-}
-
-// Prefer an existing AINS tab, then any normal web tab, then anything else
-function pickPage(browser) {
-  const pages = allPages(browser);
-  return pages.find(p => p.url().includes('ains.moe.gov.my'))
-      || pages.find(p => /^https?:/.test(p.url()))
-      || pages[0];
-}
-
-async function getWorkingPage(browser) {
-  const tabs = await listDebugTabs();
-  log(`Chrome debug port reports ${tabs.length} open tab(s)${tabs.length ? ':' : '.'}`, 'dim');
-  tabs.forEach(t => log(`  - ${t.url}`, 'dim'));
-
-  // 1) Existing tabs. Playwright attaches to them asynchronously, so poll for up to 10s.
-  for (let i = 0; i < 20; i++) {
-    const p = pickPage(browser);
-    if (p) return p;
-    if (i % 4 === 0) {
-      log(`  Waiting for Playwright to attach to a tab... (sees ${allPages(browser).length} tab(s) in ${browser.contexts().length} context(s))`, 'dim');
-    }
-    await sleep(500);
-  }
-
-  if (tabs.length > 0) {
-    log(`Chrome lists ${tabs.length} tab(s) but Playwright cannot attach to any of them. This is usually an old Playwright version: run  npm i playwright@latest`, 'yellow');
-  }
-
-  // 2) Ask Playwright to open a tab (and show the real error if it can't)
-  log('No tabs visible to Playwright. Trying to open one...', 'yellow');
-  for (const ctx of browser.contexts()) {
-    try { return await withTimeout(ctx.newPage(), 10000, 'context.newPage()'); }
-    catch (err) { log(`  context.newPage() failed: ${err.message}`, 'yellow'); }
-  }
-
-  // 3) Ask Chrome itself to open a tab through its DevTools HTTP endpoint
-  try {
-    await devtoolsRequest('/json/new?about:blank', 'PUT');
-    for (let i = 0; i < 10; i++) {
-      await sleep(500);
-      const p = pickPage(browser);
-      if (p) return p;
-    }
-  } catch (err) {
-    log(`  /json/new failed: ${err.message}`, 'yellow');
-  }
-
-  const err = new Error('Connected to Chrome, but could not get or open a tab.');
-  err.code = 'NO_PAGE';
-  throw err;
-}
-
-// ───────────────────────── Main ─────────────────────────
-
 async function main() {
   log('══════════════════', 'bright');
-  log('  AINS NILAM Bot (Fixed)', 'bright');
+  log('  AINS NILAM Bot (Standalone)', 'bright');
   log('══════════════════', 'bright');
-  try { log(`Playwright ${require('playwright/package.json').version}`, 'dim'); } catch {}
 
   ensureDir(CONFIG.SCREENSHOT_DIR);
-  let browser, page, success = 0, failed = 0;
+  let context, page, success = 0, failed = 0;
   const startTime = Date.now();
 
   try {
@@ -358,12 +217,25 @@ async function main() {
       throw new Error("books.json not found! Please create it in this folder.");
     }
 
-    log('Connecting to Chrome...', 'dim');
-    browser = await chromium.connectOverCDP(await connectToChrome(), { timeout: 15000 });
-    log('Connected. Looking for a tab...', 'dim');
-    page = await getWorkingPage(browser);
-    log(`Using tab: ${page.url() || 'about:blank'}`, 'dim');
-    await withTimeout(page.bringToFront(), 5000, 'bringToFront').catch(() => {});
+    log('Launching Chrome...', 'yellow');
+    
+    try {
+      context = await chromium.launchPersistentContext(path.resolve(CONFIG.PROFILE_DIR), {
+        channel: 'chrome',
+        headless: false,
+        viewport: null,
+        args: ['--start-maximized']
+      });
+    } catch (e) {
+      context = await chromium.launchPersistentContext(path.resolve(CONFIG.PROFILE_DIR), {
+        headless: false,
+        viewport: null,
+        args: ['--start-maximized']
+      });
+    }
+
+    const pages = context.pages();
+    page = pages.length > 0 ? pages[0] : await context.newPage();
     page.setDefaultTimeout(CONFIG.TIMEOUT);
 
     await page.goto(CONFIG.BASE_URL, { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {});
@@ -371,7 +243,7 @@ async function main() {
 
     const text = await page.locator('body').innerText().catch(() => '');
     if (text.includes('DELIMa') && !text.includes('AINS')) {
-      log('Sila login di Chrome...', 'yellow');
+      log('Sila login di tetingkap Chrome yang terbuka...', 'yellow');
       await page.waitForFunction(() => document.body.innerText.includes('AINS') || document.body.innerText.includes('Papan Pemuka'), { timeout: CONFIG.LONG_TIMEOUT });
       log('Login berjaya!', 'green');
     } else { log('Sudah login.', 'green'); }
@@ -384,7 +256,6 @@ async function main() {
     const pending = books.filter(b => !done.has(getBookKey(b)));
 
     log(`Total Buku: ${books.length} | Selesai: ${done.size} | Baki: ${pending.length}`, 'cyan');
-
     if (!pending.length) { log('Semua buku telah diproses!', 'green'); return; }
 
     const batch = pending.slice(0, CONFIG.MAX_BOOKS_PER_SESSION);
@@ -409,19 +280,10 @@ async function main() {
       }
     }
   } catch (e) {
-    if (e.code === 'CHROME_NOT_REACHABLE') {
-      log(e.message, 'red');
-      log(`Sila buka Chrome (tutup semua tetingkap Chrome dahulu), kemudian jalankan:  ${LAUNCH_HINT}`, 'yellow');
-    } else if (e.code === 'NO_PAGE') {
-      log(e.message, 'red');
-      log('Close ALL Chrome windows (check Task Manager for leftover chrome.exe), relaunch with the command above, then run again.', 'yellow');
-      log('If Chrome lists tabs but Playwright cannot attach to them, update Playwright:  npm i playwright@latest', 'yellow');
-    } else {
-      log(`Error: ${e.message}`, 'red');
-    }
+    log(`Error: ${e.message}`, 'red');
   } finally {
     log(`\n✓ Berjaya: ${success} | ✗ Gagal: ${failed} | Masa: ${((Date.now()-startTime)/1000).toFixed(1)}s`, 'cyan');
-    if (browser) await browser.close().catch(() => {});
+    if (context) await context.close().catch(() => {});
     logStream.end();
   }
 }
