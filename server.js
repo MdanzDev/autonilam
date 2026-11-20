@@ -77,55 +77,57 @@ async function checkForBan(page) {
   return false;
 }
 
-async function clickNext(page) {
-  // The new UI uses "Seterusnya →"
-  await page.locator('button:has-text("Seterusnya"), button:has-text("Seterusnya →")').first().click({ timeout: 5000 }).catch(() => {});
-  await sleep(rand(1000, 1500)); // Wait for React animation and next step to render
+async function selectCustomDropdown(page, index, valueToSelect) {
+  await sleep(rand(500, 1000));
+  
+  // Try native <select> first (most reliable)
+  const nativeSelects = page.locator('select');
+  if (await nativeSelects.count() > index) {
+    const select = nativeSelects.nth(index);
+    if (await select.isVisible()) {
+      try {
+        await select.selectOption({ label: valueToSelect });
+        return;
+      } catch (e) {
+        // Fallback to custom dropdown if option doesn't exist natively
+      }
+    }
+  }
+  
+  // Custom React Dropdown fallback
+  const dropdowns = page.locator('div[role="combobox"], button, .css-1dimb5e-control, [class*="control"]');
+  const target = dropdowns.nth(index);
+  await target.click({ force: true });
+  await sleep(rand(800, 1200));
+  await page.getByText(valueToSelect, { exact: true }).last().click();
+  await sleep(rand(400, 600));
 }
 
-// Pads text to ensure it is strictly > 100 characters
+async function clickNext(page) {
+  await page.locator('button:has-text("Seterusnya")').first().click({ timeout: 5000 }).catch(() => {});
+  await sleep(rand(1000, 1500)); 
+}
+
 function padText(text, minLength = 110) {
   let result = text ? text.trim() : '';
   const filler = " Buku ini sangat menarik untuk dibaca kerana jalan ceritanya yang padat dan penuh dengan pengajaran. Ia memberikan impak yang besar kepada pembaca dan sesuai dijadikan bahan rujukan utama dalam pelbagai bidang ilmu.";
   while (result.length < minLength) {
     result += filler;
   }
-  return result.substring(0, 500); // Cap at 500 just in case
+  return result.substring(0, 500);
 }
 
 async function fillStep1(page, book) {
   log('  Step 1/4: Kategori dan Jenis', 'dim');
   
-  // Helper to handle both native HTML selects and custom React dropdowns
-  const selectDropdown = async (index, valueToSelect) => {
-    const select = page.locator('select').nth(index);
-    // Try native select first
-    if (await select.count() > 0 && await select.isVisible()) {
-      try {
-        await select.selectOption({ label: valueToSelect });
-        return;
-      } catch (e) {
-        // Fallthrough to custom dropdown if option doesn't exist natively
-      }
-    }
-    // Custom React Dropdown fallback
-    const dropdownBtn = page.locator('.css-19bb58m, div[role="combobox"], button').filter({ hasText: /Sila pilih|Pilih/ }).first();
-    await dropdownBtn.click();
-    await sleep(500);
-    await page.getByText(valueToSelect, { exact: true }).last().click();
-  };
-
-  // 1. Kategori
   const kategori = book.category || 'Fiksyen';
-  await selectDropdown(0, kategori);
+  await selectCustomDropdown(page, 0, kategori);
 
-  // 2. Jenis Bahan (Fizikal / E-Buku)
   const jenis = book.type?.toLowerCase() === 'physical' ? 'Fizikal' : 'E-Buku';
-  await selectDropdown(1, jenis);
+  await selectCustomDropdown(page, 1, jenis);
 
-  // 3. Bahasa
   const bahasa = book.language || 'English';
-  await selectDropdown(2, bahasa);
+  await selectCustomDropdown(page, 2, bahasa);
 
   await clickNext(page);
   await waitForText(page, ['Maklumat Bacaan']);
@@ -136,26 +138,23 @@ async function fillStep2(page, book) {
   
   const inputs = page.locator('input[type="text"], input[type="number"]');
   
-  // Fill fields sequentially based on the screenshot layout
-  await inputs.nth(0).fill(book.title); // Tajuk *
+  await inputs.nth(0).fill(book.title); 
   await sleep(rand(200, 400));
   
-  await inputs.nth(1).fill(String(book.year || 2023)); // Tahun Terbitan *
+  await inputs.nth(1).fill(String(book.year || 2023)); 
   await sleep(rand(200, 400));
 
-  await inputs.nth(2).fill(book.author || 'Penulis Tidak Diketahui'); // Penulis *
+  await inputs.nth(2).fill(book.author || 'Penulis Tidak Diketahui'); 
   await sleep(rand(200, 400));
 
-  if (book.isbn) await inputs.nth(3).fill(book.isbn).catch(() => {}); // ISBN
+  if (book.isbn) await inputs.nth(3).fill(book.isbn).catch(() => {}); 
   await sleep(rand(200, 400));
 
-  await inputs.nth(4).fill(String(book.pages || 100)); // Bilangan Mukasurat *
+  await inputs.nth(4).fill(String(book.pages || 100)); 
   await sleep(rand(200, 400));
 
-  await inputs.nth(5).fill(book.publisher || 'Penerbit Umum'); // Penerbit *
+  await inputs.nth(5).fill(book.publisher || 'Penerbit Umum'); 
   
-  // Kulit Buku / Imej - Skipped (Optional)
-
   await clickNext(page);
   await waitForText(page, ['Penilaian dan Rumusan']);
 }
@@ -163,14 +162,11 @@ async function fillStep2(page, book) {
 async function fillStep3(page, book) {
   log('  Step 3/4: Penilaian dan Rumusan', 'dim');
   
-  // 1. Click Rating Star
   const rating = book.rating || 5;
-  // The stars are usually in a container. We find the 5th star icon.
   const stars = page.locator('svg[class*="star"], svg[class*="rating"], i[class*="star"], button[class*="star"]');
   if (await stars.count() >= rating) {
     await stars.nth(rating - 1).click({ force: true }).catch(() => {});
   } else {
-    // Fallback for generic SVG layout
     const starContainers = page.locator('div').filter({ has: page.locator('svg') }).filter({ hasText: /^\s*$/ }); 
     await starContainers.nth(rating - 1).click({ force: true }).catch(() => {});
   }
@@ -178,12 +174,10 @@ async function fillStep3(page, book) {
 
   const textareas = page.locator('textarea');
   
-  // 2. Rumusan * (Must be > 100 chars)
   const safeSummary = padText(book.summary, 110);
   await textareas.nth(0).fill(safeSummary);
   await sleep(rand(500, 800));
 
-  // 3. Pengajaran * (Must be > 100 chars)
   const safeLesson = padText(book.lesson, 110);
   await textareas.nth(1).fill(safeLesson);
   await sleep(rand(500, 800));
@@ -195,20 +189,16 @@ async function fillStep3(page, book) {
 async function fillStep4AndSubmit(page) {
   log('  Step 4/4: Semakan & Hantar', 'dim');
   
-  // CHECKBOX: "Ya, saya sahkan maklumat di atas adalah betul."
   const checkbox = page.locator('input[type="checkbox"]').first();
   if (await checkbox.isVisible()) {
     await checkbox.check({ force: true }).catch(() => {});
   } else {
-    // Fallback if it's a styled div
     await page.getByText('Ya, saya sahkan maklumat di atas adalah betul.').first().click({ force: true }).catch(() => {});
   }
   await sleep(rand(500, 1000));
 
-  // Hantar Rekod button
   await page.locator('button:has-text("Hantar Rekod")').first().click({ timeout: 5000 });
   
-  // Wait for Success Response
   await sleep(rand(2000, 3000));
   
   if (await waitForText(page, ['Tahniah', 'Berjaya', 'rekod anda telah dihantar'], 10000)) {
@@ -216,7 +206,6 @@ async function fillStep4AndSubmit(page) {
     return true;
   }
   
-  // Sometimes it redirects to dashboard
   if (page.url().includes('/web/dashboard')) {
     log('  ✓ Rekod dihantar (Redirected to Dashboard).', 'green');
     return true;
@@ -230,11 +219,10 @@ async function processBook(page, book, index, total) {
   log(`[${index}/${total}] Processing: ${book.title}`, 'cyan');
   
   await page.goto(CONFIG.RECORD_URL, { waitUntil: 'domcontentloaded', timeout: 20000 });
-  await sleep(2500); // Wait for React to mount
+  await sleep(2500); 
 
   if (await checkForBan(page)) throw new Error('BANNED');
   
-  // Verify page loaded
   if (!await waitForText(page, ['Kategori dan Jenis'], 10000)) {
     await takeScreenshot(page, 'no_form');
     throw new Error('Cannot load form');
@@ -259,7 +247,7 @@ async function connectToChrome() {
 
 async function main() {
   log('══════════════════', 'bright');
-  log('  AINS NILAM Bot (v2 Final)', 'bright');
+  log('  AINS NILAM Bot (Fixed)', 'bright');
   log('══════════════════', 'bright');
 
   ensureDir(CONFIG.SCREENSHOT_DIR);
@@ -267,8 +255,38 @@ async function main() {
   const startTime = Date.now();
 
   try {
+    if (!fs.existsSync(path.resolve(CONFIG.BOOK_FILE))) {
+      throw new Error("books.json not found! Please create it in this folder.");
+    }
+
     browser = await chromium.connectOverCDP(await connectToChrome());
-    page = (browser.contexts()[0].pages())[0] || await browser.contexts()[0].newPage();
+    
+    // --- FIX: Safe Page Retrieval ---
+    const contexts = browser.contexts();
+    if (contexts.length === 0) {
+      throw new Error("No browser context found. Please ensure Chrome is open.");
+    }
+    const context = contexts[0];
+    let pages = context.pages();
+    
+    if (pages.length > 0) {
+      page = pages[0];
+    } else {
+      log('No open tabs found. Waiting for Chrome to initialize...', 'yellow');
+      await sleep(2000);
+      pages = context.pages();
+      if (pages.length > 0) {
+        page = pages[0];
+      } else {
+        try {
+          page = await context.newPage();
+        } catch (err) {
+          throw new Error("Failed to attach to Chrome. Please open a new tab (Ctrl+T) in Chrome manually before running the script.");
+        }
+      }
+    }
+    // --------------------------------
+
     page.setDefaultTimeout(CONFIG.TIMEOUT);
 
     await page.goto(CONFIG.BASE_URL, { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {});
