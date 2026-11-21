@@ -4,7 +4,7 @@ const path = require('path');
 
 // --- TELEGRAM SETUP ---
 let bot;
-const TG_TOKEN = 'YOUR_NEW_TOKEN_HERE'; // CHANGE THIS TO YOUR NEW TOKEN
+const TG_TOKEN = '9199834783:AAHe2Jv0m0YGeacIaqeuQJnjSF_Oz0hJcw4'; // CHANGE THIS TO YOUR NEW TOKEN
 const TG_CHAT_ID = '7619774967';
 
 let isRunning = true;
