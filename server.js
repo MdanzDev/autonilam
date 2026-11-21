@@ -11,20 +11,65 @@ const bot = new TelegramBot(TG_TOKEN, { polling: true });
 console.log('✓ Telegram Bot Loaded');
 
 let isRunning = true;
-let currentStatus = { total: 0, success: 0, failed: 0, pending: 0 };
+let globalStartTime = Date.now();
 
+let currentStatus = { 
+  total: 0, 
+  success: 0, 
+  failed: 0, 
+  pending: 0,
+  currentBookTitle: "None",
+  currentBookIndex: 0
+};
+
+// Enhanced Telegram Sender
 const sendTG = async (msg) => {
-  try { await bot.sendMessage(TG_CHAT_ID, msg, { parse_mode: 'HTML' }); } catch (e) { console.log('TG Error:', e.message); }
+  try { 
+    await bot.sendMessage(TG_CHAT_ID, msg, { parse_mode: 'HTML', disable_web_page_preview: true }); 
+  } catch (e) { 
+    console.log('TG Error:', e.message); 
+  }
+};
+
+// New: Send Screenshot to Telegram
+const sendTGPhoto = async (photoPath, caption) => {
+  try {
+    if (fs.existsSync(photoPath)) {
+      await bot.sendPhoto(TG_CHAT_ID, fs.createReadStream(photoPath), { caption: caption, parse_mode: 'HTML' });
+    } else {
+      sendTG(caption + "\n<i>(Screenshot tidak dijumpai)</i>");
+    }
+  } catch (e) { console.log('TG Photo Error:', e.message); }
+};
+
+// Calculate ETA
+const getETA = () => {
+  if (currentStatus.success === 0) return "Mengira...";
+  const elapsedMs = Date.now() - globalStartTime;
+  const msPerBook = elapsedMs / currentStatus.success;
+  const remainingMs = msPerBook * currentStatus.pending;
+  
+  const hours = Math.floor(remainingMs / 3600000);
+  const mins = Math.floor((remainingMs % 3600000) / 60000);
+  return `${hours}j ${mins}m`;
 };
 
 bot.onText(/\/status/, (msg) => {
   if (msg.chat.id.toString() !== TG_CHAT_ID) return;
-  sendTG(`🤖 <b>Status Bot AINS</b>\n\n` +
+  
+  const percent = currentStatus.total > 0 ? ((currentStatus.success + currentStatus.failed) / currentStatus.total * 100).toFixed(1) : 0;
+  
+  sendTG(`🤖 <b>Status Bot AINS</b>\n` +
+         `━━━━━━━━━━━━━━━━━━\n` +
          `Sedang berjalan: ${isRunning ? '✅ Ya' : '⏸ Tidak (Paused)'}\n` +
-         `Total Buku: ${currentStatus.total}\n` +
-         `✅ Selesai: ${currentStatus.success}\n` +
-         `❌ Gagal: ${currentStatus.failed}\n` +
-         `⏳ Baki: ${currentStatus.pending}`);
+         `📚 <b>Total:</b> ${currentStatus.total}\n` +
+         `✅ <b>Selesai:</b> ${currentStatus.success}\n` +
+         `❌ <b>Gagal:</b> ${currentStatus.failed}\n` +
+         `⏳ <b>Baki:</b> ${currentStatus.pending}\n` +
+         `📊 <b>Progress:</b> ${percent}%\n` +
+         `⏱ <b>ETA:</b> ${getETA()}\n` +
+         `━━━━━━━━━━━━━━━━━━\n` +
+         `📖 <b>Sedang proses:</b>\n<i>${currentStatus.currentBookTitle}</i>\n[${currentStatus.currentBookIndex}/${currentStatus.total}]`);
 });
 
 bot.onText(/\/stop/, (msg) => {
@@ -94,7 +139,12 @@ function saveProgress(book, status, error = '') {
 function ensureDir(dirPath) { const d = path.resolve(dirPath); if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); }
 
 async function takeScreenshot(page, name) {
-  try { ensureDir(CONFIG.SCREENSHOT_DIR); await page.screenshot({ path: path.join(CONFIG.SCREENSHOT_DIR, `${name}_${Date.now()}.png`), fullPage: true }); } catch {}
+  try { 
+    ensureDir(CONFIG.SCREENSHOT_DIR); 
+    const filePath = path.join(CONFIG.SCREENSHOT_DIR, `${name}_${Date.now()}.png`);
+    await page.screenshot({ path: filePath, fullPage: true }); 
+    return filePath;
+  } catch { return null; }
 }
 
 async function waitForText(page, textArray, timeout = 15000) {
@@ -132,14 +182,27 @@ async function checkSessionExpired(page) {
 
 async function handleCooldown(page) {
   log(`⏳ Cooldown detected. Memulakan refresh automatik setiap 20 saat...`, 'yellow');
-  sendTG('⏳ <b>Cooldown Detected!</b> Memulakan refresh automatik...');
+  sendTG(`⏳ <b>AINS Cooldown Detected!</b>\nAINS memerlukan rehat 3 minit. Bot akan refresh setiap 20 saat.\n⏱ <i>Menunggu...</i>`);
+  
   let elapsed = 0;
+  let lastTgUpdate = 0;
+  
   while (elapsed < 300) { 
     while (!isRunning) { await sleep(2000); }
-    await sleep(20000); elapsed += 20;
+    
+    await sleep(20000); 
+    elapsed += 20;
     log(`⏳ [Cooldown] Memuat semula... (${elapsed}s)`, 'yellow');
     await page.goto(CONFIG.RECORD_URL, { waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {});
     await sleep(2500);
+    
+    // Send TG update every 60 seconds
+    if (elapsed - lastTgUpdate >= 60) {
+      const left = 180 - elapsed;
+      sendTG(`⏳ <b>Cooldown:</b> ${Math.floor(left/60)}m ${left%60}s berbaki...`);
+      lastTgUpdate = elapsed;
+    }
+
     if (await waitForText(page, ['Kategori dan Jenis'], 3000)) {
       log(`✓ Cooldown tamat!`, 'green');
       sendTG('✅ <b>Cooldown Tamat!</b> Meneruskan rekod seterusnya.');
@@ -213,6 +276,7 @@ function padText(text, minLength = 110) {
 
 async function fillStep1(page, book) {
   log('  Step 1/4: Kategori dan Jenis', 'cyan');
+  sendTG('  ↳ 📝 Step 1/4: Kategori dan Jenis...');
   await selectDropdown(page, 'Kategori', book.category || 'Fiksyen');
   await selectDropdown(page, 'Jenis Bahan', book.type?.toLowerCase() === 'physical' ? 'Fizikal' : 'E-Buku');
   await selectDropdown(page, 'Bahasa', book.language || 'English');
@@ -222,6 +286,7 @@ async function fillStep1(page, book) {
 
 async function fillStep2(page, book) {
   log('  Step 2/4: Maklumat Bacaan', 'cyan');
+  sendTG('  ↳ 📝 Step 2/4: Maklumat Bacaan...');
   const inputs = page.locator('input[type="text"]:visible, input[type="number"]:visible');
   const fields = [
     { label: 'Tajuk', value: book.title },
@@ -244,6 +309,7 @@ async function fillStep2(page, book) {
 
 async function fillStep3(page, book) {
   log('  Step 3/4: Penilaian dan Rumusan', 'cyan');
+  sendTG('  ↳ 📝 Step 3/4: Penilaian dan Rumusan...');
   const rating = book.rating || 5;
   log(`    ↳ Klik Rating: ${rating}`, 'dim');
   const stars = page.locator('svg[class*="star"]:visible, svg[class*="rating"]:visible, i[class*="star"]:visible, button[class*="star"]:visible');
@@ -264,6 +330,8 @@ async function fillStep3(page, book) {
 
 async function fillStep4AndSubmit(page) {
   log('  Step 4/4: Semakan & Hantar', 'cyan');
+  sendTG('  ↳ 📝 Step 4/4: Semakan & Hantar...');
+  
   log('    ↳ Menanda checkbox...', 'dim');
   const checkbox = page.locator('input[type="checkbox"]:visible').first();
   if (await checkbox.isVisible()) {
@@ -286,7 +354,11 @@ async function fillStep4AndSubmit(page) {
 
 async function processBook(page, book, index, total) {
   const start = Date.now();
+  currentStatus.currentBookTitle = book.title;
+  currentStatus.currentBookIndex = index;
+  
   log(`\n[${index}/${total}] Memproses: ${book.title}`, 'magenta');
+  sendTG(`📖 <b>Memproses [${index}/${total}]</b>\n\n<b>Tajuk:</b> ${book.title}\n<b>Penulis:</b> ${book.author || 'Tiada'}\n\n🔄 Menyemak borang...`);
   
   let formLoaded = false; let attempts = 0;
   while (!formLoaded && attempts < 3) {
@@ -315,14 +387,18 @@ async function processBook(page, book, index, total) {
   await fillStep2(page, book);
   await fillStep3(page, book);
   await fillStep4AndSubmit(page);
-  log(`  ✓ Selesai dalam ${((Date.now() - start) / 1000).toFixed(1)}s`, 'green');
+  
+  const duration = ((Date.now() - start) / 1000).toFixed(1);
+  log(`  ✓ Selesai dalam ${duration}s`, 'green');
+  return duration;
 }
 
 async function main() {
+  globalStartTime = Date.now();
+  
   log('══════════════════', 'bright');
   log('  AINS NILAM Bot (Ultimate Overnight)', 'bright');
   log('══════════════════', 'bright');
-  sendTG('🚀 <b>Bot AINS Dimulakan!</b>\nHantar /status, /stop, atau /start.');
 
   ensureDir(CONFIG.SCREENSHOT_DIR);
   let context, page, success = 0, failed = 0;
@@ -353,41 +429,81 @@ async function main() {
     const done = new Set([...sl.map(getBookKey), ...fl.map(getBookKey)]);
     const pending = books.filter(b => !done.has(getBookKey(b)));
 
-    currentStatus = { total: books.length, success: done.size, failed: fl.length, pending: pending.length };
+    currentStatus = { 
+      total: books.length, 
+      success: done.size, 
+      failed: fl.length, 
+      pending: pending.length,
+      currentBookTitle: "None",
+      currentBookIndex: 0
+    };
+    
     log(`Total: ${books.length} | Selesai: ${done.size} | Baki: ${pending.length}`, 'cyan');
     
-    if (!pending.length) { log('Semua buku diproses!', 'green'); sendTG('🎉 Semua buku selesai!'); return; }
+    if (!pending.length) { 
+      log('Semua buku diproses!', 'green'); 
+      sendTG('🎉 <b>Semua buku telah diproses!</b>'); 
+      return; 
+    }
+
+    sendTG(`🚀 <b>Bot AINS Dimulakan!</b>\n\n📚 Total: ${currentStatus.total}\n✅ Selesai: ${currentStatus.success}\n❌ Gagal: ${currentStatus.failed}\n⏳ Baki: ${currentStatus.pending}\n\nBot sedang berjalan...`);
 
     for (let i = 0; i < pending.length; i++) {
       while (!isRunning) { await sleep(2000); }
       const book = pending[i];
       
       try {
-        await processBook(page, book, books.indexOf(book) + 1, books.length);
+        const duration = await processBook(page, book, books.indexOf(book) + 1, books.length);
         saveProgress(book, 'success'); success++;
         currentStatus.success++; currentStatus.pending--;
-        sendTG(`✅ <b>Berjaya:</b> ${book.title}\nBaki: ${currentStatus.pending}`);
+        
+        sendTG(`✅ <b>BERJAYA:</b> ${book.title}\n⏱ Masa: ${duration}s\n\n📊 Selesai: ${currentStatus.success} | Gagal: ${currentStatus.failed} | Baki: ${currentStatus.pending}`);
+        
+        // Short gap before next check
+        if (i < pending.length - 1) { 
+            const g = rand(CONFIG.MIN_BOOK_GAP, CONFIG.MAX_BOOK_GAP); 
+            log(`  Jeda pendek: ${Math.round(g/1000)}s...`, 'dim'); 
+            await sleep(g); 
+        }
       } catch (e) {
-        if (e.message === 'BANNED') { sendTG(`⛔ <b>AKAUN DISEKAT!</b>`); break; }
+        if (e.message === 'BANNED') { 
+          sendTG(`⛔ <b>AKAUN DISEKAT!</b>\nProses dihentikan.`); 
+          break; 
+        }
+        
         log(`  ✗ Ralat: ${e.message}`, 'red');
-        await takeScreenshot(page, `err_${books.indexOf(book)}`);
+        const ssPath = await takeScreenshot(page, `err_${books.indexOf(book)}`);
         saveProgress(book, 'failed', e.message); failed++;
         currentStatus.failed++; currentStatus.pending--;
-        sendTG(`❌ <b>Gagal:</b> ${book.title}\nError: ${e.message}`);
         
+        // Send Failure message WITH Screenshot
+        const failCaption = `❌ <b>GAGAL:</b> ${book.title}\n⚠️ Error: ${e.message}\n\n📊 Selesai: ${currentStatus.success} | Gagal: ${currentStatus.failed} | Baki: ${currentStatus.pending}`;
+        if (ssPath) {
+          await sendTGPhoto(ssPath, failCaption);
+        } else {
+          sendTG(failCaption);
+        }
+        
+        log('  Kembali ke Dashboard untuk pemulihan...', 'yellow');
         await page.goto(CONFIG.DASHBOARD_URL, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
         await sleep(5000);
       }
     }
   } catch (e) {
-    log(`Error: ${e.message}`, 'red'); sendTG(`⚠️ <b>Error:</b> ${e.message}`);
+    log(`Error: ${e.message}`, 'red'); 
+    sendTG(`⚠️ <b>Sistem Error:</b> ${e.message}`);
   } finally {
     log(`\n✓ Berjaya: ${success} | ✗ Gagal: ${failed}`, 'cyan');
-    sendTG(`🏁 <b>Batch Selesai!</b>\n✅ Berjaya: ${success}\n❌ Gagal: ${failed}`);
+    sendTG(`🏁 <b>Batch Selesai!</b>\n✅ Berjaya: ${success}\n❌ Gagal: ${failed}\n\nBot akan berhenti.`);
     if (context) await context.close().catch(() => {});
     logStream.end();
     process.exit(0); 
   }
 }
 
-main().catch(e => { log(`Crash: ${e.message}`, 'red'); sendTG(`💥 <b>Crash:</b> ${e.message}`); logStream.end(); process.exit(1); });
+main().catch(e => { 
+  log(`Crash: ${e.message}`, 'red'); 
+  sendTG(`💥 <b>Bot Crash:</b> ${e.message}`); 
+  logStream.end(); 
+  process.exit(1); 
+});
