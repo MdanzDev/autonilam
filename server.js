@@ -1,7 +1,8 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
-const TelegramBot = require('node-telegram-bot-api');
+const TelegramBotModule = require('node-telegram-bot-api');
+const TelegramBot = TelegramBotModule.default || TelegramBotModule;
 
 // --- TELEGRAM SETUP ---
 const TG_TOKEN = '9199834783:AAHe2Jv0m0YGeacIaqeuQJnjSF_Oz0hJcw4'; // CHANGE THIS
