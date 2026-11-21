@@ -1,11 +1,13 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
+
+// FIXED: Node v23 module import
 const TelegramBotModule = require('node-telegram-bot-api');
 const TelegramBot = TelegramBotModule.default || TelegramBotModule;
 
 // --- TELEGRAM SETUP ---
-const TG_TOKEN = '9199834783:AAHe2Jv0m0YGeacIaqeuQJnjSF_Oz0hJcw4'; // CHANGE THIS
+const TG_TOKEN = '9199834783:AAHe2Jv0m0YGeacIaqeuQJnjSF_Oz0hJcw4'; // CHANGE THIS TO YOUR NEW TOKEN
 const TG_CHAT_ID = '7619774967';
 const bot = new TelegramBot(TG_TOKEN, { polling: true });
 
@@ -50,7 +52,7 @@ const CONFIG = {
   PROFILE_DIR: "./chrome-profile",
   TIMEOUT: 30000,
   LONG_TIMEOUT: 600000, 
-  MAX_BOOKS_PER_SESSION: 999, // CHANGED TO 999 FOR OVERNIGHT
+  MAX_BOOKS_PER_SESSION: 999, 
   MIN_BOOK_GAP: 5000, 
   MAX_BOOK_GAP: 10000  
 };
@@ -114,7 +116,6 @@ async function checkForBan(page) {
   return false;
 }
 
-// NEW: Session Expiry Checker
 async function checkSessionExpired(page) {
   const url = page.url();
   if (url.includes('accounts.google.com') || url.includes('login')) {
@@ -196,7 +197,6 @@ async function clickNext(page) {
   await sleep(rand(1000, 1500)); 
 }
 
-// UPDATED: Random Filler Text
 function padText(text, minLength = 110) {
   let result = text ? text.trim() : '';
   const fillers = [
@@ -292,7 +292,7 @@ async function processBook(page, book, index, total) {
     await page.goto(CONFIG.RECORD_URL, { waitUntil: 'domcontentloaded', timeout: 20000 });
     await sleep(2500); 
 
-    await checkSessionExpired(page); // Check if Google Login kicked in
+    await checkSessionExpired(page); 
     
     if (await checkForBan(page)) throw new Error('BANNED');
     if (await waitForText(page, ['Kategori dan Jenis'], 5000)) {
