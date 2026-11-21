@@ -1,38 +1,92 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
-
-// --- TELEGRAM SETUP ---
+const readline = require('readline');
 const TelegramBot = require('node-telegram-bot-api');
-const TG_TOKEN = 'YOUR_NEW_TOKEN_HERE'; // CHANGE THIS TO YOUR NEW TOKEN
-const TG_CHAT_ID = '7619774967';
 
-const bot = new TelegramBot(TG_TOKEN, { polling: true });
-console.log('✓ Telegram Bot Loaded');
-
+let bot;
+let TG_CHAT_ID = '';
 let isRunning = true;
 let globalStartTime = Date.now();
 
 let currentStatus = { 
-  total: 0, 
-  success: 0, 
-  failed: 0, 
-  pending: 0,
-  currentBookTitle: "None",
-  currentBookIndex: 0
+  total: 0, success: 0, failed: 0, pending: 0,
+  currentBookTitle: "None", currentBookIndex: 0
 };
 
+// --- TELEGRAM SETUP WITH READLINE ---
+const CONFIG_FILE = path.join(__dirname, 'telegram-config.json');
+
+async function getTelegramCredentials() {
+  // 1. Check if config file exists (so you don't have to type it every time)
+  if (fs.existsSync(CONFIG_FILE)) {
+    const data = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+    if (data.token && data.chatId) return data;
+  }
+
+  // 2. Ask user via readline if not found
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  const ask = (q) => new Promise(resolve => rl.question(q, resolve));
+
+  console.log('\n🤖 =========================================');
+  console.log('   TELEGRAM SETUP (Sila masukkan maklumat)');
+  console.log('============================================');
+  
+  const token = await ask('Enter Telegram Bot Token: ');
+  const chatId = await ask('Enter Telegram Chat ID: ');
+  rl.close();
+
+  const creds = { token: token.trim(), chatId: chatId.trim() };
+  
+  // 3. Save for future runs
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify(creds, null, 2));
+  console.log('✓ Telegram config saved to telegram-config.json\n');
+  
+  return creds;
+}
+
+async function initTelegram() {
+  const creds = await getTelegramCredentials();
+  TG_CHAT_ID = creds.chatId;
+  
+  try {
+    bot = new TelegramBot(creds.token, { polling: true });
+    console.log('✓ Telegram Bot Loaded');
+
+    bot.onText(/\/status/, (msg) => {
+      if (msg.chat.id.toString() !== TG_CHAT_ID) return;
+      const percent = currentStatus.total > 0 ? ((currentStatus.success + currentStatus.failed) / currentStatus.total * 100).toFixed(1) : 0;
+      sendTG(`🤖 <b>Status Bot AINS</b>\n━━━━━━━━━━━━━━━━━━\nSedang berjalan: ${isRunning ? '✅ Ya' : '⏸ Tidak (Paused)'}\n📚 <b>Total:</b> ${currentStatus.total}\n✅ <b>Selesai:</b> ${currentStatus.success}\n❌ <b>Gagal:</b> ${currentStatus.failed}\n⏳ <b>Baki:</b> ${currentStatus.pending}\n📊 <b>Progress:</b> ${percent}%\n⏱ <b>ETA:</b> ${getETA()}\n━━━━━━━━━━━━━━━━━━\n📖 <b>Sedang proses:</b>\n<i>${currentStatus.currentBookTitle}</i>\n[${currentStatus.currentBookIndex}/${currentStatus.total}]`);
+    });
+
+    bot.onText(/\/stop/, (msg) => {
+      if (msg.chat.id.toString() !== TG_CHAT_ID) return;
+      isRunning = false;
+      sendTG('⏸ <b>Bot Dihentikan Sementara.</b>\nHantar /start untuk sambung.');
+    });
+
+    bot.onText(/\/start/, (msg) => {
+      if (msg.chat.id.toString() !== TG_CHAT_ID) return;
+      isRunning = true;
+      sendTG('▶️ <b>Bot Dimulakan Semula.</b>');
+    });
+  } catch (e) {
+    console.log('⚠ Telegram Bot failed to load. Check your token/chat ID:', e.message);
+    bot = null; // Continue without Telegram
+  }
+}
+
 const sendTG = async (msg) => {
+  if (!bot) return;
   try { await bot.sendMessage(TG_CHAT_ID, msg, { parse_mode: 'HTML', disable_web_page_preview: true }); } catch (e) {}
 };
 
 const sendTGPhoto = async (photoPath, caption) => {
+  if (!bot) return;
   try {
     if (fs.existsSync(photoPath)) {
       await bot.sendPhoto(TG_CHAT_ID, fs.createReadStream(photoPath), { caption: caption, parse_mode: 'HTML' });
-    } else {
-      sendTG(caption + "\n<i>(Screenshot tidak dijumpai)</i>");
-    }
+    } else { sendTG(caption + "\n<i>(Screenshot tidak dijumpai)</i>"); }
   } catch (e) {}
 };
 
@@ -41,40 +95,10 @@ const getETA = () => {
   const elapsedMs = Date.now() - globalStartTime;
   const msPerBook = elapsedMs / currentStatus.success;
   const remainingMs = msPerBook * currentStatus.pending;
-  
   const hours = Math.floor(remainingMs / 3600000);
   const mins = Math.floor((remainingMs % 3600000) / 60000);
   return `${hours}j ${mins}m`;
 };
-
-bot.onText(/\/status/, (msg) => {
-  if (msg.chat.id.toString() !== TG_CHAT_ID) return;
-  const percent = currentStatus.total > 0 ? ((currentStatus.success + currentStatus.failed) / currentStatus.total * 100).toFixed(1) : 0;
-  
-  sendTG(`🤖 <b>Status Bot AINS</b>\n` +
-         `━━━━━━━━━━━━━━━━━━\n` +
-         `Sedang berjalan: ${isRunning ? '✅ Ya' : '⏸ Tidak (Paused)'}\n` +
-         `📚 <b>Total:</b> ${currentStatus.total}\n` +
-         `✅ <b>Selesai:</b> ${currentStatus.success}\n` +
-         `❌ <b>Gagal:</b> ${currentStatus.failed}\n` +
-         `⏳ <b>Baki:</b> ${currentStatus.pending}\n` +
-         `📊 <b>Progress:</b> ${percent}%\n` +
-         `⏱ <b>ETA:</b> ${getETA()}\n` +
-         `━━━━━━━━━━━━━━━━━━\n` +
-         `📖 <b>Sedang proses:</b>\n<i>${currentStatus.currentBookTitle}</i>\n[${currentStatus.currentBookIndex}/${currentStatus.total}]`);
-});
-
-bot.onText(/\/stop/, (msg) => {
-  if (msg.chat.id.toString() !== TG_CHAT_ID) return;
-  isRunning = false;
-  sendTG('⏸ <b>Bot Dihentikan Sementara.</b>\nHantar /start untuk sambung.');
-});
-
-bot.onText(/\/start/, (msg) => {
-  if (msg.chat.id.toString() !== TG_CHAT_ID) return;
-  isRunning = true;
-  sendTG('▶️ <b>Bot Dimulakan Semula.</b>');
-});
 // -----------------------
 
 const CONFIG = {
@@ -179,14 +203,12 @@ async function handleCooldown(page) {
   const cooldownStart = Date.now();
   let lastTgUpdate = 0;
   
-  while ((Date.now() - cooldownStart) < 300000) { // Max 5 minutes
+  while ((Date.now() - cooldownStart) < 300000) { 
     while (!isRunning) { await sleep(2000); }
-    
     const delay = rand(3000, 10000); 
     await sleep(delay); 
     
     const elapsedSeconds = Math.round((Date.now() - cooldownStart) / 1000);
-    
     log(`⏳ [Refresh] Memuat semula... (${elapsedSeconds}s berlalu)`, 'dim');
     await page.goto(CONFIG.RECORD_URL, { waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {});
     await sleep(1500); 
@@ -235,7 +257,6 @@ async function selectDropdown(page, labelName, valueToSelect) {
       }
       return;
     }
-    
     await combobox.click({ timeout: 5000, force: true });
     await sleep(800); 
     const option = page.getByRole('option', { name: new RegExp(valueToSelect.replace('-', '.?'), 'i') }).last();
@@ -382,8 +403,10 @@ async function main() {
   globalStartTime = Date.now();
   
   log('══════════════════', 'bright');
-  log('  AINS NILAM Bot (Daily Limit Handler)', 'bright');
+  log('  AINS NILAM Bot (Public Release)', 'bright');
   log('══════════════════', 'bright');
+
+  await initTelegram(); // Initialize Telegram with readline
 
   ensureDir(CONFIG.SCREENSHOT_DIR);
   let context, page, success = 0, failed = 0;
@@ -415,12 +438,8 @@ async function main() {
     const pending = books.filter(b => !done.has(getBookKey(b)));
 
     currentStatus = { 
-      total: books.length, 
-      success: done.size, 
-      failed: fl.length, 
-      pending: pending.length,
-      currentBookTitle: "None",
-      currentBookIndex: 0
+      total: books.length, success: done.size, failed: fl.length, pending: pending.length,
+      currentBookTitle: "None", currentBookIndex: 0
     };
     
     log(`Total: ${books.length} | Selesai: ${done.size} | Baki: ${pending.length}`, 'cyan');
@@ -451,7 +470,6 @@ async function main() {
       } catch (e) {
         if (e.message === 'BANNED') { sendTG(`⛔ <b>AKAUN DISEKAT!</b>`); break; }
         
-        // HANDLE DAILY LIMIT
         if (e.message === 'DAILY_LIMIT_REACHED') {
             log(`🛑 Had 50 rekod harian telah dicapai. Bot berhenti.`, 'red');
             sendTG(`🛑 <b>HAD HARIAN DICAPAI (50 Rekod)!</b>\n\nAINS menghadkan 50 rekod sehari. Bot telah berhenti dengan selamat.\nSila jalankan semula bot <b>ESOK</b>.`);
