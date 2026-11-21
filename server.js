@@ -2,43 +2,18 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
-// FIXED: Node v23 module import
-const TelegramBotModule = require('node-telegram-bot-api');
-const TelegramBot = TelegramBotModule.default || TelegramBotModule;
-
 // --- TELEGRAM SETUP ---
-const TG_TOKEN = '9199834783:AAHe2Jv0m0YGeacIaqeuQJnjSF_Oz0hJcw4'; // CHANGE THIS TO YOUR NEW TOKEN
+let bot;
+const TG_TOKEN = 'YOUR_NEW_TOKEN_HERE'; // CHANGE THIS TO YOUR NEW TOKEN
 const TG_CHAT_ID = '7619774967';
-const bot = new TelegramBot(TG_TOKEN, { polling: true });
 
 let isRunning = true;
 let currentStatus = { total: 0, success: 0, failed: 0, pending: 0 };
 
 const sendTG = async (msg) => {
+  if (!bot) return; 
   try { await bot.sendMessage(TG_CHAT_ID, msg, { parse_mode: 'HTML' }); } catch (e) {}
 };
-
-bot.onText(/\/status/, (msg) => {
-  if (msg.chat.id.toString() !== TG_CHAT_ID) return;
-  sendTG(`🤖 <b>Status Bot AINS</b>\n\n` +
-         `Sedang berjalan: ${isRunning ? '✅ Ya' : '⏸ Tidak (Paused)'}\n` +
-         `Total Buku: ${currentStatus.total}\n` +
-         `✅ Selesai: ${currentStatus.success}\n` +
-         `❌ Gagal: ${currentStatus.failed}\n` +
-         `⏳ Baki: ${currentStatus.pending}`);
-});
-
-bot.onText(/\/stop/, (msg) => {
-  if (msg.chat.id.toString() !== TG_CHAT_ID) return;
-  isRunning = false;
-  sendTG('⏸ <b>Bot Dihentikan Sementara.</b>');
-});
-
-bot.onText(/\/start/, (msg) => {
-  if (msg.chat.id.toString() !== TG_CHAT_ID) return;
-  isRunning = true;
-  sendTG('▶️ <b>Bot Dimulakan Semula.</b>');
-});
 // -----------------------
 
 const CONFIG = {
@@ -51,7 +26,7 @@ const CONFIG = {
   SCREENSHOT_DIR: "./screenshots",
   PROFILE_DIR: "./chrome-profile",
   TIMEOUT: 30000,
-  LONG_TIMEOUT: 600000, 
+  LONG_TIMEOUT: 600000, // 10 mins for manual login
   MAX_BOOKS_PER_SESSION: 999, 
   MIN_BOOK_GAP: 5000, 
   MAX_BOOK_GAP: 10000  
@@ -133,15 +108,17 @@ async function checkSessionExpired(page) {
 
 async function handleCooldown(page) {
   log(`⏳ Cooldown detected. Memulakan refresh automatik setiap 20 saat...`, 'yellow');
+  sendTG('⏳ <b>Cooldown Detected!</b> Memulakan refresh automatik...');
   let elapsed = 0;
   while (elapsed < 300) { 
-    while (!isRunning) { await sleep(2000); }
+    while (!isRunning) { await sleep(2000); } // Check if paused via /stop
     await sleep(20000); elapsed += 20;
     log(`⏳ [Cooldown] Memuat semula... (${elapsed}s)`, 'yellow');
     await page.goto(CONFIG.RECORD_URL, { waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {});
     await sleep(2500);
     if (await waitForText(page, ['Kategori dan Jenis'], 3000)) {
       log(`✓ Cooldown tamat!`, 'green');
+      sendTG('✅ <b>Cooldown Tamat!</b> Meneruskan rekod seterusnya.');
       return true;
     }
   }
@@ -178,6 +155,8 @@ async function selectDropdown(page, labelName, valueToSelect) {
       }
       return;
     }
+    
+    // React custom dropdown fallback
     await combobox.click({ timeout: 5000, force: true });
     await sleep(1000); 
     const option = page.getByRole('option', { name: new RegExp(valueToSelect.replace('-', '.?'), 'i') }).last();
@@ -288,7 +267,7 @@ async function processBook(page, book, index, total) {
   
   let formLoaded = false; let attempts = 0;
   while (!formLoaded && attempts < 3) {
-    while (!isRunning) { await sleep(2000); }
+    while (!isRunning) { await sleep(2000); } // Pause check
     await page.goto(CONFIG.RECORD_URL, { waitUntil: 'domcontentloaded', timeout: 20000 });
     await sleep(2500); 
 
@@ -317,6 +296,39 @@ async function processBook(page, book, index, total) {
 }
 
 async function main() {
+  // --- INITIALIZE TELEGRAM BOT DYNAMICALLY (FIX FOR NODE v23) ---
+  try {
+    const { default: TelegramBot } = await import('node-telegram-bot-api');
+    bot = new TelegramBot(TG_TOKEN, { polling: true });
+    console.log('✓ Telegram Bot Loaded');
+
+    bot.onText(/\/status/, (msg) => {
+      if (msg.chat.id.toString() !== TG_CHAT_ID) return;
+      sendTG(`🤖 <b>Status Bot AINS</b>\n\n` +
+             `Sedang berjalan: ${isRunning ? '✅ Ya' : '⏸ Tidak (Paused)'}\n` +
+             `Total Buku: ${currentStatus.total}\n` +
+             `✅ Selesai: ${currentStatus.success}\n` +
+             `❌ Gagal: ${currentStatus.failed}\n` +
+             `⏳ Baki: ${currentStatus.pending}`);
+    });
+
+    bot.onText(/\/stop/, (msg) => {
+      if (msg.chat.id.toString() !== TG_CHAT_ID) return;
+      isRunning = false;
+      sendTG('⏸ <b>Bot Dihentikan Sementara.</b>\nHantar /start untuk sambung.');
+    });
+
+    bot.onText(/\/start/, (msg) => {
+      if (msg.chat.id.toString() !== TG_CHAT_ID) return;
+      isRunning = true;
+      sendTG('▶️ <b>Bot Dimulakan Semula.</b>');
+    });
+
+  } catch (e) {
+    console.log('⚠ Telegram Bot failed to load:', e.message);
+  }
+  // -------------------------------------------------------------
+
   log('══════════════════', 'bright');
   log('  AINS NILAM Bot (Ultimate Overnight)', 'bright');
   log('══════════════════', 'bright');
@@ -327,6 +339,7 @@ async function main() {
 
   try {
     if (!fs.existsSync(path.resolve(CONFIG.BOOK_FILE))) throw new Error("books.json not found!");
+    
     log('Melancarkan Chrome...', 'yellow');
     try {
       context = await chromium.launchPersistentContext(path.resolve(CONFIG.PROFILE_DIR), { channel: 'chrome', headless: false, viewport: null, args: ['--start-maximized'] });
@@ -356,7 +369,7 @@ async function main() {
     if (!pending.length) { log('Semua buku diproses!', 'green'); sendTG('🎉 Semua buku selesai!'); return; }
 
     for (let i = 0; i < pending.length; i++) {
-      while (!isRunning) { await sleep(2000); }
+      while (!isRunning) { await sleep(2000); } // Pause check
       const book = pending[i];
       
       try {
