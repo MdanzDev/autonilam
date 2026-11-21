@@ -4,7 +4,7 @@ const path = require('path');
 
 // --- TELEGRAM SETUP ---
 const TelegramBot = require('node-telegram-bot-api');
-const TG_TOKEN = '9199834783:AAHe2Jv0m0YGeacIaqeuQJnjSF_Oz0hJcw4'; // CHANGE THIS TO YOUR NEW TOKEN
+const TG_TOKEN = 'YOUR_NEW_TOKEN_HERE'; // CHANGE THIS TO YOUR NEW TOKEN
 const TG_CHAT_ID = '7619774967';
 
 const bot = new TelegramBot(TG_TOKEN, { polling: true });
@@ -172,34 +172,33 @@ async function checkSessionExpired(page) {
   }
 }
 
-// UPDATED: Random 3-10s refresh loop
 async function handleCooldown(page) {
   log(`⏳ Cooldown detected. Memulakan refresh rawak (3-10s) sehingga borang dibuka...`, 'yellow');
   sendTG(`⏳ <b>Cooldown Detected!</b>\nBot akan refresh setiap 3-10 saat sehingga borang dibuka.`);
   
-  let elapsed = 0;
+  const cooldownStart = Date.now();
   let lastTgUpdate = 0;
   
-  while (elapsed < 300) { // Max 5 minutes
+  while ((Date.now() - cooldownStart) < 300000) { // Max 5 minutes
     while (!isRunning) { await sleep(2000); }
     
-    const delay = rand(3000, 10000); // 3 to 10 seconds random
+    const delay = rand(3000, 10000); 
     await sleep(delay); 
-    elapsed += (delay / 1000);
     
-    log(`⏳ [Refresh] Memuat semula... (${Math.round(elapsed)}s berlalu)`, 'dim');
+    const elapsedSeconds = Math.round((Date.now() - cooldownStart) / 1000);
+    
+    log(`⏳ [Refresh] Memuat semula... (${elapsedSeconds}s berlalu)`, 'dim');
     await page.goto(CONFIG.RECORD_URL, { waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {});
     await sleep(1500); 
 
-    // Send TG update every 60 seconds
-    if (elapsed - lastTgUpdate >= 60) {
-      sendTG(`⏳ <b>Cooldown:</b> Bot masih menunggu borang dibuka...`);
-      lastTgUpdate = elapsed;
+    if (elapsedSeconds - lastTgUpdate >= 60) {
+      sendTG(`⏳ <b>Cooldown:</b> ${elapsedSeconds}s berlalu. Menunggu borang dibuka...`);
+      lastTgUpdate = elapsedSeconds;
     }
 
     if (await waitForText(page, ['Kategori dan Jenis'], 3000)) {
       log(`✓ Borang dibuka!`, 'green');
-      sendTG('✅ <b>Cooldown Tamat!</b> Borang dibuka.');
+      sendTG(`✅ <b>Cooldown Tamat!</b> Borang dibuka selepas ${elapsedSeconds}s.`);
       return true;
     }
   }
@@ -349,6 +348,12 @@ async function processBook(page, book, index, total) {
     await checkSessionExpired(page); 
     
     if (await checkForBan(page)) throw new Error('BANNED');
+
+    // DAILY LIMIT CHECK
+    if (await waitForText(page, ['Had rekod harian telah dicapai'], 3000)) {
+      throw new Error('DAILY_LIMIT_REACHED');
+    }
+
     if (await waitForText(page, ['Kategori dan Jenis'], 4000)) {
       formLoaded = true;
     } 
@@ -377,7 +382,7 @@ async function main() {
   globalStartTime = Date.now();
   
   log('══════════════════', 'bright');
-  log('  AINS NILAM Bot (3-10s Random Refresh)', 'bright');
+  log('  AINS NILAM Bot (Daily Limit Handler)', 'bright');
   log('══════════════════', 'bright');
 
   ensureDir(CONFIG.SCREENSHOT_DIR);
@@ -426,7 +431,7 @@ async function main() {
       return; 
     }
 
-    sendTG(`🚀 <b>Bot AINS Dimulakan (Fast Refresh)!</b>\n\n📚 Total: ${currentStatus.total}\n✅ Selesai: ${currentStatus.success}\n❌ Gagal: ${currentStatus.failed}\n⏳ Baki: ${currentStatus.pending}`);
+    sendTG(`🚀 <b>Bot AINS Dimulakan!</b>\n\n📚 Total: ${currentStatus.total}\n✅ Selesai: ${currentStatus.success}\n❌ Gagal: ${currentStatus.failed}\n⏳ Baki: ${currentStatus.pending}`);
 
     for (let i = 0; i < pending.length; i++) {
       while (!isRunning) { await sleep(2000); }
@@ -446,6 +451,13 @@ async function main() {
       } catch (e) {
         if (e.message === 'BANNED') { sendTG(`⛔ <b>AKAUN DISEKAT!</b>`); break; }
         
+        // HANDLE DAILY LIMIT
+        if (e.message === 'DAILY_LIMIT_REACHED') {
+            log(`🛑 Had 50 rekod harian telah dicapai. Bot berhenti.`, 'red');
+            sendTG(`🛑 <b>HAD HARIAN DICAPAI (50 Rekod)!</b>\n\nAINS menghadkan 50 rekod sehari. Bot telah berhenti dengan selamat.\nSila jalankan semula bot <b>ESOK</b>.`);
+            break; 
+        }
+
         log(`  ✗ Ralat: ${e.message}`, 'red');
         const ssPath = await takeScreenshot(page, `err_${books.indexOf(book)}`);
         saveProgress(book, 'failed', e.message); failed++;
